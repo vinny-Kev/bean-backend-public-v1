@@ -10,7 +10,7 @@ export const requirePermission = (requiredPermission) => {
                  : [requiredPermission];
 
             if(requiredPermissions.length ===0) {
-                return res.status(400).json({message: 'At least one permission is required.'})
+                return res.status(403).json({message: 'At least one permission is required.'})
             }
 
             const result =  await pool.query(`
