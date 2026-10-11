@@ -36,9 +36,9 @@ export const validateSignupData = async (req, res, next) => {
         return res.status(400).json({ message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.' });
     }
     console.log('[AUTH MIDDLEWARE]: End Process - Checking for duplicate database records.');
-    const existingUserQuery = 'SELECT * FROM users WHERE email = $1';
+    const existingUserQuery = 'SELECT EXISTS ( SELECT 1 FROM users WHERE email = $1) AS exists';
     const existingUserResult = await pool.query(existingUserQuery, [email]);
-    if (existingUserResult.rows.length > 0) {
+    if (existingUserResult.rows[0].exists) {
         console.log('[AUTH MIDDLEWARE]: End Process - User already exists.');
         return res.status(400).json({ message: 'User with this email already exists.' });
     }

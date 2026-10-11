@@ -6,18 +6,18 @@ export const readInventoryService = async (req, res) => {
     try {
         console.log('[INVENTORY SERVICE]: Start Process - Reading inventory data.');
 
-        const result = await pool.query('SELECT * FROM inventory');
+        const result = await pool.query('SELECT id, name, sku, quantity, unit, created_at, updated_at FROM inventory');
         console.log('[INVENTORY SERVICE]: End Process SUCCESS - Inventory data retrieved successfully.');
 
         if (result.rows.length === 0) {
             console.log('[INVENTORY SERVICE]: End Process - No inventory data found.');
             return res.status(404).json({ message: 'No inventory data found.' });
-        }
+        } 
 
         console.log("[INVENTORY SERVICE]: Compose Audit Logs")
         const auditEntry = auditLog({
             userId: req.user.id,
-            action: 'READ DATABASE INVENTORY',
+            action: 'READ INVENTORY',
             tableName: 'inventory',
             recordId: null,
             oldData: null,
@@ -25,7 +25,17 @@ export const readInventoryService = async (req, res) => {
         })
         await composeAuditLogs(auditEntry)
 
-        return res.status(200).json({ inventory: result.rows });
+        const responseObject = result.rows.map(item => ({
+            id: item.id,
+            name: item.name,
+            sku: item.sku,
+            quantity: item.quantity,
+            unit: item.unit,
+            createdAt: item.created_at,
+            updatedAt: item.updated_at,
+        }));
+
+        return res.status(201).json({ message: 'Inventory data retrieved successfully.', data: responseObject });
     } catch (error) {
         console.error('[INVENTORY SERVICE]: End Process - Error during inventory service:', error);
         return res.status(500).json({ message: 'Internal server error during inventory service.' });
@@ -46,7 +56,7 @@ export const addInvetoryItemService = async (req, res) => {
             `
             INSERT INTO inventory (name, sku, quantity, unit)
             VALUES ($1, $2, $3, $4)
-            RETURNING *
+            RETURNING id, name, sku, quantity, unit, created_at
             `,
             [name, sku ?? null, quantity ?? 0, unit ?? 'unit']
         );
@@ -61,20 +71,26 @@ export const addInvetoryItemService = async (req, res) => {
         console.log("[INVENTORY SERVICE]: Compose Audit Logs")
         const auditEntry = auditLog({
             userId: req.user.id,
-            action: 'ADD DATABASE INVENTORY',
+            action: 'CREATE INVENTORY',
             tableName: 'inventory',
             recordId: item.id,
             oldData: null,
             newData: item,
         })
         
-
         await composeAuditLogs(auditEntry, client)
-
         await client.query('COMMIT');
 
-        console.log('[INVENTORY SERVICE]: End Process SUCCESS - Inventory item added successfully:', result.rows[0]);
-        return res.status(201).json({ message: 'Inventory item added successfully.', item });
+        const responseObject = {
+            id: item.id,
+            name: item.name,
+            sku: item.sku,
+            quantity: item.quantity,
+            unit: item.unit,
+            createdAt: item.created_at,
+        };
+
+        return res.status(200).json({ message: 'Inventory data inserted successfully.', data: responseObject });
     }
     catch (err){
         if(client) {

@@ -6,12 +6,18 @@ import { auditLog } from '../../audit_logs/auditLog.js';
 export const inventoryMiddleware = async (req, res, next) => {
     try {
         console.log("[INVENTORY MIDDLEWARE]: Start Process - Inventory middleware.");
-        const { name, quantity, unit } = req.body;
-        const rawSku = req.body.sku;
+        const { name, unit } = req.body;
 
+        const rawSku = req.body.sku;
         const sku = typeof rawSku === 'string'
             ? rawSku.trim().toUpperCase()
             : null;
+
+        const rawQuantity = req.body.quantity;
+        const quantity = rawQuantity === undefined
+            ? undefined
+            : Number(rawQuantity);
+
 
         if (!name || typeof name !== 'string' || !name.trim()) {
             console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
@@ -35,7 +41,7 @@ export const inventoryMiddleware = async (req, res, next) => {
             console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
             const auditEntry = auditLog({
                 userId: req.user.id,
-                action: 'INVALID INTENTORY ITEM NAME',
+                action: 'INVALID INVENTORY ITEM NAME',
                 tableName: 'inventory',
                 recordId: null,
                 oldData: null,
@@ -52,7 +58,7 @@ export const inventoryMiddleware = async (req, res, next) => {
             console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
             const auditEntry = auditLog({
                 userId: req.user.id,
-                action: 'NULL/EMPTY INTENTORY SKU VALUE',
+                action: 'NULL/EMPTY INVENTORY SKU VALUE',
                 tableName: 'inventory',
                 recordId: null,
                 oldData: null,
@@ -77,13 +83,12 @@ export const inventoryMiddleware = async (req, res, next) => {
                 newData: { name, quantity, unit, sku },
             });
             await composeAuditLogs(auditEntry);
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
 
             console.log("[INVENTORY MIDDLEWARE]: End Process - Invalid SKU.");
             return res.status(400).json({ message: 'Invalid SKU.' });
         }
 
-        if (quantity !== undefined && (typeof quantity !== 'number' || quantity < 0)) {
+        if (quantity !== undefined && (!Number.isInteger(quantity) || quantity < 0)) {
 
             console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
             const auditEntry = auditLog({
@@ -95,16 +100,14 @@ export const inventoryMiddleware = async (req, res, next) => {
                 newData: { name, quantity, unit, sku },
             });
             await composeAuditLogs(auditEntry);
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
 
             console.log("[INVENTORY MIDDLEWARE]: End Process - Invalid inventory quantity.");
             return res.status(400).json({ message: 'Invalid inventory quantity.' });
         }
 
-        const duplicateCheckQuery = 'SELECT * FROM inventory WHERE sku = $1';
+        const duplicateCheckQuery = 'SELECT EXISTS (SELECT 1 FROM inventory where sku = $1) AS exists';
         const duplicateCheckResult = await pool.query(duplicateCheckQuery, [sku]);
-        if (duplicateCheckResult.rows.length > 0) {
-
+        if (duplicateCheckResult.rows[0].exists) {
             console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
             const auditEntry = auditLog({
                 userId: req.user.id,
@@ -115,7 +118,6 @@ export const inventoryMiddleware = async (req, res, next) => {
                 newData: { name, quantity, unit, sku },
             });
             await composeAuditLogs(auditEntry);
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
 
             console.log("[INVENTORY MIDDLEWARE]: End Process - Item already exists.");
             
@@ -124,6 +126,7 @@ export const inventoryMiddleware = async (req, res, next) => {
 
         req.body = {
             ...req.body,
+            quantity,
             sku,
         }
 
