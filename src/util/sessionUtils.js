@@ -1,12 +1,3 @@
-export const destroySession = (req) => {
-    return new Promise((resolve, reject)=> {
-        req.session.destroy((error) => {
-            if(error){
-                console.error('[DESTROY SERVICE]: End Process - Error destroying session:', error);
-                return reject(error);
-            }
-            resolve();
-        });
-    });
-}
-
+export const destroySession = (req) => new Promise((resolve, reject) => {
+    req.session.destroy((error) => error ? reject(error) : resolve());
+});

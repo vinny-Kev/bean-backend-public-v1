@@ -1,12 +1,10 @@
-import 'dotenv/config';
 import pg from 'pg';
+import { config } from '../config.js';
 
 const { Pool } = pg;
 
-export const pool = new Pool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-})
+export const pool = new Pool(config.database);
+
+pool.on('error', () => {
+    console.error(JSON.stringify({ level: 'error', event: 'postgres_pool_idle_client_error' }));
+});

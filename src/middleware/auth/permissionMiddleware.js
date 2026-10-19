@@ -2,9 +2,10 @@ import { pool } from '../../db/pool.js';
 
 export const requirePermission = (requiredPermission) => {
     return async (req, res, next) => {
+        if (!req.user?.id) {
+            return res.status(401).json({ message: 'Unauthorized.' });
+        }
         try {
-            console.log("[PERMISSION MIDDLEWARE]: Start Process - Checking permissions for user:", { userId: req.user.id, requiredPermission });
-
             const requiredPermissions = Array.isArray(requiredPermission)
                  ? requiredPermission 
                  : [requiredPermission];
@@ -36,15 +37,13 @@ export const requirePermission = (requiredPermission) => {
 
  
             if (!result.rows[0].has_all_permissions) {
-                console.log("[PERMISSION MIDDLEWARE]: End Process - User does not have required permissions.");
                 return res.status(403).json({ message: 'Forbidden: You do not have the required permissions.' });
             }
 
-                return next();
+            return next();
 
         } catch (error) {
-            console.error("[PERMISSION MIDDLEWARE]: End Process - Error during permission check:", error);
-            return res.status(500).json({ message: 'Internal server error during permission check.' });
+            return next(error);
         }
     }
 };

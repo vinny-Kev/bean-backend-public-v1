@@ -1,6 +1,6 @@
-const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
+import { config } from '../../config.js';
 
-import { allowedOrigins } from '../../server.js'
+const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 export const requireTrustedOrigin = (req, res, next) => {
     if (safeMethods.has(req.method)) {
@@ -8,11 +8,10 @@ export const requireTrustedOrigin = (req, res, next) => {
     }
 
     const requestOrigin = req.get('origin');
-    console.log(`[ORIGIN MIDDLEWARE]: Request Origin: ${requestOrigin}`);
-
-    if (!requestOrigin || !allowedOrigins.has(requestOrigin)) {
-        console.log(`[ORIGIN MIDDLEWARE]: End Process - Untrusted origin`);
-        return res.status(403).json({ message: 'Forbidden: Untrusted origin.' });
+    if (!requestOrigin || !config.allowedOrigins.has(requestOrigin)) {
+        const error = new Error('Untrusted request origin.');
+        error.status = 403;
+        return next(error);
     }
 
     return next();
