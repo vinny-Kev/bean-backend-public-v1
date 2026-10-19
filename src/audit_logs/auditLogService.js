@@ -5,7 +5,9 @@ export const composeAuditLogs = async (
 ) => {
     try {    
     console.log("[AUDIT LOG SERVICE]: Start Process - Composing audit log entry:");
-    const result = await client.query(
+
+    
+    await client.query(
         `INSERT INTO audit_logs (
             user_id,
             action,
@@ -14,8 +16,7 @@ export const composeAuditLogs = async (
             old_data,
             new_data,
             created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING 
-         id, user_id, action, table_name, record_id, old_data, new_data, created_at`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
             auditLog.userId,
             auditLog.action,
@@ -27,16 +28,14 @@ export const composeAuditLogs = async (
         ]
         );
 
-        const auditEntry = result.rows[0];
-
         const responseData = {
-            userId: auditEntry.user_id,
-            action: auditEntry.action,
-            tableName: auditEntry.table_name,
-            recordId: auditEntry.record_id,
-            oldData: auditEntry.old_data,
-            newData: auditEntry.new_data,
-            createdAt: auditEntry.created_at,
+            userId: auditLog.userId,
+            action: auditLog.action,
+            tableName: auditLog.tableName,
+            recordId: auditLog.recordId,
+            oldData: auditLog.oldData,
+            newData: auditLog.newData,
+            createdAt: auditLog.created_at,
         }
         
         console.log("[AUDIT LOG SERVICE]: End Process SUCCESS - Audit log entry created successfully:", responseData);
