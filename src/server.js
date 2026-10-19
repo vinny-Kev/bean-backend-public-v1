@@ -15,7 +15,7 @@ const PORT = 3000;
 
 const PostgresSessionStore = connectPgSimple(session);
 
-const allowedOrigins = new Set(
+export const allowedOrigins = new Set(
     (process.env.APP_ORIGINS ?? '')
         .split(',')
         .map(origin => origin.trim())

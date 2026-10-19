@@ -1,8 +1,6 @@
 const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-const allowedOrigins = new Set([
-    process.env.APP_ORIGINS,
-]);
+import { allowedOrigins } from '../../server.js'
 
 export const requireTrustedOrigin = (req, res, next) => {
     if (safeMethods.has(req.method)) {

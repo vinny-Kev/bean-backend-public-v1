@@ -4,6 +4,8 @@ import bcrypt from 'bcrypt';
 
 export const validateSignupData = async (req, res, next) => {
     const { username, email, password } = req.body;
+
+    
     
     const normalizedUsername =
         typeof username=== 'string' ? username.trim(): '';
