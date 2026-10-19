@@ -55,6 +55,39 @@ if (sameSite === 'none' && nodeEnv !== 'production') {
     throw new Error('COOKIE_SAME_SITE=None requires NODE_ENV=production and HTTPS.');
 }
 
+const databaseUrl = process.env.DATABASE_URL?.trim();
+let database;
+if (databaseUrl) {
+    let parsedDatabaseUrl;
+    try {
+        parsedDatabaseUrl = new URL(databaseUrl);
+    } catch {
+        throw new Error('DATABASE_URL must be a valid PostgreSQL connection URL.');
+    }
+    if (!['postgres:', 'postgresql:'].includes(parsedDatabaseUrl.protocol)
+        || !parsedDatabaseUrl.hostname
+        || !parsedDatabaseUrl.pathname.slice(1)) {
+        throw new Error('DATABASE_URL must include a PostgreSQL scheme, host, and database name.');
+    }
+    // pg-connection-string currently treats `require` as `verify-full` but warns
+    // that this alias will change in a future major release. Be explicit.
+    if (['prefer', 'require', 'verify-ca'].includes(parsedDatabaseUrl.searchParams.get('sslmode'))) {
+        parsedDatabaseUrl.searchParams.set('sslmode', 'verify-full');
+    }
+    database = {
+        connectionString: parsedDatabaseUrl.toString(),
+        ssl: { rejectUnauthorized: true },
+    };
+} else {
+    database = {
+        host: required('DB_HOST'),
+        port: parseInteger('DB_PORT', process.env.DB_PORT ?? '5432', { min: 1, max: 65535 }),
+        database: required('DB_NAME'),
+        user: required('DB_USER'),
+        password: required('DB_PASSWORD'),
+    };
+}
+
 export const config = Object.freeze({
     nodeEnv,
     host: process.env.HOST?.trim() || '127.0.0.1',
@@ -63,11 +96,5 @@ export const config = Object.freeze({
     cookieSameSite: sameSite,
     cookieSecure: nodeEnv === 'production',
     allowedOrigins: new Set(allowedOrigins),
-    database: Object.freeze({
-        host: required('DB_HOST'),
-        port: parseInteger('DB_PORT', process.env.DB_PORT ?? '5432', { min: 1, max: 65535 }),
-        database: required('DB_NAME'),
-        user: required('DB_USER'),
-        password: required('DB_PASSWORD'),
-    }),
+    database: Object.freeze(database),
 });

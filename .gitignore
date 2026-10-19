@@ -11,8 +11,7 @@ coverage/
 *.backup
 local-db-dumps/
 
-
-tests/
+# Local API client exports and abandoned scratch tests are not part of the source suite.
+tests/requestly-collection.json
+src/middleware/tests/
 documentation/
-package-lock.json
-package.json
