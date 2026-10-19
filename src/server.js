@@ -10,6 +10,7 @@ import { requireTrustedOrigin } from './middleware/auth/originMiddleware.js';
 import inventoryRoutes from './inventory/routes/inventory.routes.js';
 import authRoutes from './auth/routes/auth.routes.js';
 
+
 const app = express();
 const PORT = 3000;
 

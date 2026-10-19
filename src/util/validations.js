@@ -10,6 +10,8 @@ export const compareToPattern = (value, pattern) => {
             return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d\s])\S{8,}$/.test(value);
         case 'sku':
             return /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(value);
+        case 'item_id':
+            return /^[1-9]\d*$/.test(value);    
         default:
             return false;
     }
