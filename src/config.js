@@ -69,8 +69,13 @@ if (databaseUrl) {
         || !parsedDatabaseUrl.pathname.slice(1)) {
         throw new Error('DATABASE_URL must include a PostgreSQL scheme, host, and database name.');
     }
+    // pg-connection-string currently treats `require` as `verify-full` but warns
+    // that this alias will change in a future major release. Be explicit.
+    if (['prefer', 'require', 'verify-ca'].includes(parsedDatabaseUrl.searchParams.get('sslmode'))) {
+        parsedDatabaseUrl.searchParams.set('sslmode', 'verify-full');
+    }
     database = {
-        connectionString: databaseUrl,
+        connectionString: parsedDatabaseUrl.toString(),
         ssl: { rejectUnauthorized: true },
     };
 } else {

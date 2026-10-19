@@ -57,9 +57,49 @@ app.use('/audit/', auditRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-const server = app.listen(config.port, config.host, () => {
-    console.log(`[SERVER] Listening on ${config.host}:${config.port} (${config.nodeEnv}).`);
-});
+let server;
+
+const startServer = async () => {
+    let databaseClient;
+    let startupFailed = false;
+    try {
+        databaseClient = await pool.connect();
+        const result = await databaseClient.query(`
+            SELECT current_database() AS database,
+                   current_user AS role,
+                   inet_server_addr()::text AS server_address
+        `);
+        const connectionHost = config.database.connectionString
+            ? new URL(config.database.connectionString).hostname
+            : config.database.host;
+        const tlsEnabled = databaseClient.connection.stream.encrypted === true;
+        console.log('[BREADCRUMB][DATABASE_CONNECTED]', JSON.stringify({
+            database: result.rows[0].database,
+            role: result.rows[0].role,
+            host: connectionHost,
+            serverAddress: result.rows[0].server_address,
+            tls: tlsEnabled,
+        }));
+
+        server = app.listen(config.port, config.host, () => {
+            console.log(`[SERVER] Listening on ${config.host}:${config.port} (${config.nodeEnv}).`);
+        });
+    } catch (error) {
+        console.error('[BREADCRUMB][DATABASE_CONNECTION_FAILED]', JSON.stringify({
+            code: error.code ?? 'UNKNOWN',
+            message: error.message,
+        }));
+        startupFailed = true;
+    } finally {
+        databaseClient?.release();
+    }
+    if (startupFailed) {
+        await pool.end().catch(() => {});
+        process.exitCode = 1;
+    }
+};
+
+void startServer();
 
 let shuttingDown = false;
 const shutdown = async (signal) => {
@@ -69,9 +109,11 @@ const shutdown = async (signal) => {
 
     let failed = false;
     try {
-        await new Promise((resolve, reject) => {
-            server.close((error) => error ? reject(error) : resolve());
-        });
+        if (server) {
+            await new Promise((resolve, reject) => {
+                server.close((error) => error ? reject(error) : resolve());
+            });
+        }
     } catch {
         failed = true;
     }
