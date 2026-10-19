@@ -1,73 +1,47 @@
 import { composeAuditLogs } from '../../audit_logs/auditLogService.js';
 import { auditLog } from '../../audit_logs/auditLog.js';
-import { destroySession } from '../../util/sessionUtils.js'
+import { destroySession } from '../../util/sessionUtils.js';
+import { config } from '../../config.js';
 
-export const loginUser = async (req, res) => {
-    const sessionStartedAt = Date.now();
-    console.log(`LOGIN SERVICE]: Session Start: ${sessionStartedAt}`);
+const regenerateSession = (req) => new Promise((resolve, reject) => {
+    req.session.regenerate((error) => error ? reject(error) : resolve());
+});
+
+const saveSession = (req) => new Promise((resolve, reject) => {
+    req.session.save((error) => error ? reject(error) : resolve());
+});
+
+export const loginUser = async (req, res, next) => {
     try {
-        await new Promise((resolve, reject) => {
-            req.session.userId = req.user.id;
-            req.session.authenticatedAt = sessionStartedAt;
-            req.session.regenerate((err) => {
-                if(err) {
-                    console.error('[LOGIN SERVICE]: End Process - Error regenerating session:', err);
-                    return reject(err);
-                }
-                else resolve();
-                });
-            });
-          
-            await new Promise((resolve,reject) =>{
-                req.session.save((error)=>{
-                    if(error){
-                        console.error('[LOGIN SERVICE]: End Process - Error regenerating session:', error);
-                        reject(error);
-                    } else resolve();
-                });
-            });
+        await regenerateSession(req);
+        req.session.userId = req.user.id;
+        req.session.authenticatedAt = Date.now();
+        await saveSession(req);
 
-            console.log('[LOGIN SERVICE]: Compose Audit Logs');
-            const auditEntry = auditLog({
-                userId: req.user.id,
-                action: `LOGIN_SUCCESS`,
-                tableName: 'session',
-                recordId: req.user.id,
-            });
-            await composeAuditLogs(auditEntry);
-            console.log('[LOGIN SERVICE]: End Compose Audit Logs');
+        await composeAuditLogs(auditLog({
+            userId: req.user.id,
+            action: 'LOGIN_SUCCESS',
+            tableName: 'session',
+            recordId: req.user.id,
+        }));
 
-            req.session.userId = req.user.id;
-            req.session.authenticatedAt = sessionStartedAt;
-            console.log('[LOGIN SERVICE]: End Process SUCCESS - Login successful, session created.');
-            console.log('[LOGIN SERVICE]: Session details:', { userId: req.session.userId});
+        return res.status(200).json({ message: 'Login successful.', user: req.user });
+    } catch (error) {
+        return next(error);
+    }
+};
 
-            return res.status(200).json({
-                message: 'Login successful.',
-                user: req.user
-            });
-        } catch(error) {
-            console.error("[LOGIN SERVICE]: End Process - Error during login:", error);
-            return res.status(500).json({ message: 'Internal server error during login.' });
-        }
-    };
-
-export const logoutUser = async (req, res) => {
+export const logoutUser = async (req, res, next) => {
     try {
-        await destroySession(req);
+        if (req.session) await destroySession(req);
         res.clearCookie('bean.sid', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/'
+            secure: config.cookieSecure,
+            sameSite: config.cookieSameSite,
+            path: '/',
         });
-        console.log("[LOGOUT SERVICE]: End Process SUCCESS - User logged out and session destroyed.");
-        return res.status(204).json({message: 'User succesfully logged out.'}).send();
-    } 
-    catch(err) {
-        console.error("[LOGOUT SERVICE]: End Process - Error during logout:", err);
-        return res.status(500).json({ message: 'Internal server error during logout.' });
+        return res.status(204).end();
+    } catch (error) {
+        return next(error);
     }
-}
-
-
+};

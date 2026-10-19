@@ -2,96 +2,76 @@ import { compareToPattern, inRangeOfLength } from '../../util/validations.js';
 import { pool } from '../../db/pool.js';
 import bcrypt from 'bcrypt';
 
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+
 export const validateSignupData = async (req, res, next) => {
-    const { username, email, password } = req.body;
-
-    
-    
-    const normalizedUsername =
-        typeof username=== 'string' ? username.trim(): '';
-
-    console.log('[AUTH MIDDLEWARE]  START Validating signup data:', { username, email });
-    if (!normalizedUsername)  {
-        console.log('[AUTH MIDDLEWARE]: End Process -  Username is required.');
-        return res.status(400).json({ message: 'Username is required are required.' });
-    }    
-    if (!compareToPattern(normalizedUsername, "alphanumeric") || !inRangeOfLength(normalizedUsername, 3, 20)) {
-        console.log('[AUTH MIDDLEWARE]: End Process - Username is invalid.');
-        return res.status(400).json({ message: 'Username must be alphanumeric.' });
+    const body = req.body;
+    if (!isPlainObject(body)) {
+        return res.status(400).json({ message: 'A JSON object is required.' });
     }
 
-    if (!email) {
-        console.log('[AUTH MIDDLEWARE]: End Process - Email is required.');
-        return res.status(400).json({ message: 'Email is required.' });
+    const username = typeof body.username === 'string' ? body.username.trim() : '';
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const password = body.password;
+
+    if (!username || !compareToPattern(username, 'alphanumeric') || !inRangeOfLength(username, 3, 20)) {
+        return res.status(400).json({ message: 'Username must be 3 to 20 alphanumeric characters.' });
     }
-    if (!compareToPattern(email, "email")) {
-        console.log('[AUTH MIDDLEWARE]: End Process - Email is invalid.');
-        return res.status(400).json({ message: 'Email is not valid.' });
+    if (!email || email.length > 254 || !compareToPattern(email, 'email')) {
+        return res.status(400).json({ message: 'A valid email address is required.' });
     }
-    if (!password) {
-        console.log('[AUTH MIDDLEWARE]: End Process - Password is required.');
-        return res.status(400).json({ message: 'Password is required.' });
+    if (typeof password !== 'string' || Buffer.byteLength(password, 'utf8') > 72
+        || !compareToPattern(password, 'password') || !inRangeOfLength(password, 8, 20)) {
+        return res.status(400).json({
+            message: 'Password must be 8 to 20 characters, include upper and lower case letters, a number and a symbol, and use at most 72 UTF-8 bytes.',
+        });
     }
-    if (!compareToPattern(password, "password") ||
-    !inRangeOfLength(password, 8, 20)) {
-        console.log('[AUTH MIDDLEWARE]: End Process - Password is invalid.');
-        return res.status(400).json({ message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.' });
+
+    try {
+        const existing = await pool.query(
+            'SELECT EXISTS (SELECT 1 FROM users WHERE LOWER(email) = $1 OR LOWER(username) = LOWER($2)) AS exists',
+            [email, username],
+        );
+        if (existing.rows[0].exists) {
+            return res.status(409).json({ message: 'An account with those details already exists.' });
+        }
+
+        req.body = { username, email, password };
+        return next();
+    } catch (error) {
+        return next(error);
     }
-    console.log('[AUTH MIDDLEWARE]: End Process - Checking for duplicate database records.');
-    const existingUserQuery = 'SELECT EXISTS ( SELECT 1 FROM users WHERE email = $1) AS exists';
-    const existingUserResult = await pool.query(existingUserQuery, [email]);
-    if (existingUserResult.rows[0].exists) {
-        console.log('[AUTH MIDDLEWARE]: End Process - User already exists.');
-        return res.status(400).json({ message: 'User with this email already exists.' });
-    }
-    console.log('[AUTH MIDDLEWARE]: End Process SUCCESS - Signup data validation passed.');
-    next();
 };
 
-export const validateLoginData = async (req, res ,next) => {
-    const { email, password} = req.body ?? {};
-
-    if (typeof email !== 'string' || !email.trim() ){
-        console.log('[AUTH MIDDLEWARE]: End Process - Email is required.');
-        return res.status(400).json({message: ' Email is required.'})
+export const validateLoginData = async (req, res, next) => {
+    const body = req.body;
+    const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const password = body?.password;
+    if (!email || email.length > 254 || typeof password !== 'string'
+        || !password || Buffer.byteLength(password, 'utf8') > 72) {
+        return res.status(400).json({ message: 'Email and password are required.' });
     }
 
-    if (typeof password !== 'string' || !password ){
-        console.log('[AUTH MIDDLEWARE]: End Process - password is required.');
-        return res.status(400).json({message: ' password is required.'})
-    }
-
-    try{
-        const trimmedEmail = email.trim().toLowerCase();
-
+    try {
         const result = await pool.query(
             `SELECT id, email, username, password_hash, role_id
-            FROM users
-            WHERE email = $1`,
-            [trimmedEmail]
-        )
-
+             FROM users
+             WHERE LOWER(email) = $1 AND is_disabled = false AND deleted_at IS NULL`,
+            [email],
+        );
         const user = result.rows[0];
+        const valid = user ? await bcrypt.compare(password, user.password_hash) : false;
 
-        const passwordIsValid = user && await bcrypt.compare(password, user.password_hash)
-
-        if (!passwordIsValid){
-            console.log("[AUTH MIIDDLEWARE]: End Process - Invalid email or password.")
-            return res.status(401).json({ message: 'Invalid email or password.' });
-        }
+        if (!valid) return res.status(401).json({ message: 'Invalid email or password.' });
 
         req.user = {
             id: user.id,
             email: user.email,
             username: user.username,
-            role: user.role_id
+            roleId: user.role_id,
         };
-
-        console.log("[AUTH MIIDDLEWARE]: End Process SUCCESS - Login Validation Passed")
         return next();
-    }catch(error){
-        console.log("[AUTH MIDDLEWARE]: End Process - Error during login validation:", error)
-        return res.status(500).json({ message: 'Internal server error during login validation.' });
+    } catch (error) {
+        return next(error);
     }
 };
-
