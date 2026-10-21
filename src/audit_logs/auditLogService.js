@@ -5,8 +5,6 @@ export const composeAuditLogs = async (
 ) => {
     try {    
     console.log("[AUDIT LOG SERVICE]: Start Process - Composing audit log entry:");
-
-    
     await client.query(
         `INSERT INTO audit_logs (
             user_id,
