@@ -34,6 +34,10 @@ export const errorHandler = (error, req, res, _next) => {
         status,
         code,
         errorName: error.name,
+        ...(error.code && { databaseCode: error.code }),
+        ...(error.table && { databaseTable: error.table }),
+        ...(error.column && { databaseColumn: error.column }),
+        ...(error.constraint && { databaseConstraint: error.constraint }),
     }));
 
     if (res.headersSent) return res.end();

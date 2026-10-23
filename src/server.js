@@ -11,7 +11,7 @@ import { errorHandler, notFoundHandler, requestContext } from './middleware/erro
 import inventoryRoutes from './inventory/routes/inventory.routes.js';
 import auditRoutes from './audit_logs/routes/audit.routes.js';
 import authRoutes from './auth/routes/auth.routes.js';
-
+import integrationRoutes from './integrations/routes/integration.routes.js';
 const app = express();
 const PostgresSessionStore = connectPgSimple(session);
 const sessionStore = new PostgresSessionStore({ pool, createTableIfMissing: true });
@@ -54,6 +54,7 @@ app.use(requireTrustedOrigin);
 app.use('/auth/', authRoutes);
 app.use('/inventory/', inventoryRoutes);
 app.use('/audit/', auditRoutes);
+app.use('/integrations/', integrationRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
