@@ -1,7 +1,5 @@
-import { pool } from '../../db/pool.js';
-import { compareToPattern, inRangeOfLength } from '../../util/validations.js';
+import { compareToPattern, inRangeOfLength, isPlainObject, parsePositiveId } from '../../util/validations.js';
 
-const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const quantityIsValid = (value) => Number.isSafeInteger(value) && value >= 0 && value <= 2147483647;
 const parseQuantity = (value) => {
     if (typeof value === 'number') return value;
@@ -37,10 +35,10 @@ export const inventoryMiddleware = (req, res, next) => {
     return next();
 };
 
-export const updateInventoryMiddleware = async (req, res, next) => {
-    const id = req.params.id;
+export const updateInventoryMiddleware = (req, res, next) => {
+    const id = parsePositiveId(req.params.id);
     const body = req.body;
-    if (!/^\d+$/.test(id ?? '') || !Number.isSafeInteger(Number(id)) || Number(id) < 1) {
+    if (!id) {
         return res.status(400).json({ message: 'Invalid inventory item ID.' });
     }
     if (!isPlainObject(body)) {
@@ -65,15 +63,9 @@ export const updateInventoryMiddleware = async (req, res, next) => {
         return res.status(400).json({ message: 'Unit must be 1 to 50 characters.' });
     }
 
-    try {
-        const existingItem = await pool.query('SELECT 1 FROM inventory WHERE id = $1', [id]);
-        if (existingItem.rowCount === 0) {
-            return res.status(404).json({ message: 'Inventory item not found.' });
-        }
-
-        req.body = { name, sku, quantity, unit };
-        return next();
-    } catch (error) {
-        return next(error);
-    }
+    // Existence is checked by the service inside the tenant-scoped transaction, so another
+    // tenant's item IDs are indistinguishable from missing ones.
+    req.params.id = id;
+    req.body = { name, sku, quantity, unit };
+    return next();
 };
