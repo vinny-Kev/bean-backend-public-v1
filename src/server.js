@@ -12,6 +12,9 @@ import inventoryRoutes from './inventory/routes/inventory.routes.js';
 import auditRoutes from './audit_logs/routes/audit.routes.js';
 import authRoutes from './auth/routes/auth.routes.js';
 import integrationRoutes from './integrations/routes/integration.routes.js';
+import tenantRoutes from './tenants/routes/tenant.routes.js';
+import { startIntegrationEventWorker } from './integrations/services/integrationEventWorker.js';
+import { startIntegrationRetentionWorker } from './integrations/services/integrationRetentionService.js';
 const app = express();
 const PostgresSessionStore = connectPgSimple(session);
 const sessionStore = new PostgresSessionStore({ pool, createTableIfMissing: true });
@@ -20,10 +23,11 @@ app.disable('x-powered-by');
 app.use(requestContext);
 app.use(helmet());
 app.use(cors({
+    // Integration events are server-to-server; integration app URLs must not
+    // become credentialed CORS origins for session-authenticated routes.
     origin: (origin, callback) => {
         if (!origin) return callback(null, false);
         if (config.allowedOrigins.has(origin)) return callback(null, origin);
-
         const error = new Error('Untrusted CORS origin.');
         error.status = 403;
         return callback(error);
@@ -32,8 +36,14 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Origin', 'Idempotency-Key'],
 }));
-app.use(express.json({ limit: '100kb' }));
-app.use(express.urlencoded({ extended: false, limit: '10kb' }));
+app.use((req, res, next) => {
+    if (req.method === 'POST' && /^\/integrations\/[1-9]\d*\/events\/?$/.test(req.path)) return next();
+    return express.json({ limit: '100kb' })(req, res, next);
+});
+app.use((req, res, next) => {
+    if (req.method === 'POST' && /^\/integrations\/[1-9]\d*\/events\/?$/.test(req.path)) return next();
+    return express.urlencoded({ extended: false, limit: '10kb' })(req, res, next);
+});
 
 app.use(session({
     name: 'bean.sid',
@@ -50,15 +60,21 @@ app.use(session({
     },
 }));
 
-app.use(requireTrustedOrigin);
+app.use((req, res, next) => {
+    if (req.method === 'POST' && /^\/integrations\/[1-9]\d*\/events\/?$/.test(req.path)) return next();
+    return requireTrustedOrigin(req, res, next);
+});
 app.use('/auth/', authRoutes);
 app.use('/inventory/', inventoryRoutes);
 app.use('/audit/', auditRoutes);
 app.use('/integrations/', integrationRoutes);
+app.use('/tenants/', tenantRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
 let server;
+let stopIntegrationWorker;
+let stopIntegrationRetentionWorker;
 
 const startServer = async () => {
     let databaseClient;
@@ -85,6 +101,8 @@ const startServer = async () => {
         server = app.listen(config.port, config.host, () => {
             console.log(`[SERVER] Listening on ${config.host}:${config.port} (${config.nodeEnv}).`);
         });
+        stopIntegrationWorker = startIntegrationEventWorker();
+        stopIntegrationRetentionWorker = startIntegrationRetentionWorker();
     } catch (error) {
         console.error('[BREADCRUMB][DATABASE_CONNECTION_FAILED]', JSON.stringify({
             code: error.code ?? 'UNKNOWN',
@@ -109,8 +127,11 @@ const shutdown = async (signal) => {
     console.log(`[SERVER] ${signal} received; shutting down.`);
 
     let failed = false;
+    stopIntegrationWorker?.();
+    stopIntegrationRetentionWorker?.();
     try {
         if (server) {
+            server.stopIntegrationEventWorker?.();
             await new Promise((resolve, reject) => {
                 server.close((error) => error ? reject(error) : resolve());
             });
@@ -119,7 +140,7 @@ const shutdown = async (signal) => {
         failed = true;
     }
     try {
-        await sessionStore.close();
+        sessionStore.close();
     } catch {
         failed = true;
     }

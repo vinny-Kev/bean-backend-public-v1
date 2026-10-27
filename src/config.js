@@ -16,6 +16,14 @@ const parseInteger = (name, value, { min, max }) => {
     return parsed;
 };
 
+const parseIntegerList = (name, value, { min, max }) => {
+    const values = value.split(',').map((item) => parseInteger(name, item.trim(), { min, max }));
+    if (values.length < 1 || values.some((item) => item === null)) {
+        throw new Error(`${name} must be a comma-separated list of integers between ${min} and ${max}.`);
+    }
+    return Object.freeze(values);
+};
+
 const nodeEnv = process.env.NODE_ENV ?? 'development';
 if (!['development', 'test', 'production'].includes(nodeEnv)) {
     throw new Error('NODE_ENV must be development, test, or production.');
@@ -96,5 +104,16 @@ export const config = Object.freeze({
     cookieSameSite: sameSite,
     cookieSecure: nodeEnv === 'production',
     allowedOrigins: new Set(allowedOrigins),
+    integrationWorkerIntervalMs: parseInteger('INTEGRATION_WORKER_INTERVAL_MS', process.env.INTEGRATION_WORKER_INTERVAL_MS ?? '300000', { min: 1000, max: 86400000 }),
+    integrationWorkerBatchSize: parseInteger('INTEGRATION_WORKER_BATCH_SIZE', process.env.INTEGRATION_WORKER_BATCH_SIZE ?? '100', { min: 1, max: 1000 }),
+    integrationMaxAttempts: parseInteger('INTEGRATION_MAX_ATTEMPTS', process.env.INTEGRATION_MAX_ATTEMPTS ?? '5', { min: 1, max: 20 }),
+    integrationLeaseMs: parseInteger('INTEGRATION_LEASE_MS', process.env.INTEGRATION_LEASE_MS ?? '300000', { min: 10000, max: 3600000 }),
+    integrationRetryDelaysMs: parseIntegerList('INTEGRATION_RETRY_DELAYS_MS', process.env.INTEGRATION_RETRY_DELAYS_MS ?? '60000,300000,900000,3600000', { min: 1000, max: 86400000 }),
+    integrationRetentionIntervalMs: parseInteger('INTEGRATION_RETENTION_INTERVAL_MS', process.env.INTEGRATION_RETENTION_INTERVAL_MS ?? '86400000', { min: 60000, max: 604800000 }),
+    integrationRetentionBatchSize: parseInteger('INTEGRATION_RETENTION_BATCH_SIZE', process.env.INTEGRATION_RETENTION_BATCH_SIZE ?? '500', { min: 1, max: 5000 }),
+    integrationEventRetentionDays: parseInteger('INTEGRATION_EVENT_RETENTION_DAYS', process.env.INTEGRATION_EVENT_RETENTION_DAYS ?? '90', { min: 1, max: 3650 }),
+    integrationAttemptRetentionDays: parseInteger('INTEGRATION_ATTEMPT_RETENTION_DAYS', process.env.INTEGRATION_ATTEMPT_RETENTION_DAYS ?? '180', { min: 1, max: 3650 }),
+    integrationDiagnosticRetentionDays: parseInteger('INTEGRATION_DIAGNOSTIC_RETENTION_DAYS', process.env.INTEGRATION_DIAGNOSTIC_RETENTION_DAYS ?? '90', { min: 1, max: 3650 }),
+    analyticsOutboxRetentionDays: parseInteger('ANALYTICS_OUTBOX_RETENTION_DAYS', process.env.ANALYTICS_OUTBOX_RETENTION_DAYS ?? '90', { min: 1, max: 3650 }),
     database: Object.freeze(database),
 });

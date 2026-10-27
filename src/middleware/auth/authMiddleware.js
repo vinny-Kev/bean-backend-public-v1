@@ -1,8 +1,6 @@
-import { compareToPattern, inRangeOfLength } from '../../util/validations.js';
+import { compareToPattern, inRangeOfLength, isPlainObject } from '../../util/validations.js';
 import { pool } from '../../db/pool.js';
 import bcrypt from 'bcrypt';
-
-const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 export const validateSignupData = async (req, res, next) => {
     const body = req.body;

@@ -12,12 +12,13 @@ export const readInventoryService = async (req, res, next) => {
         const query = `
             SELECT id, name, sku, quantity, unit, created_at, updated_at
             FROM inventory
+            WHERE tenant_id = $1
             ORDER BY created_at DESC, id DESC
-            ${hasPagination ? 'LIMIT $1 OFFSET $2' : ''}
+            ${hasPagination ? 'LIMIT $2 OFFSET $3' : ''}
         `;
         const result = hasPagination
-            ? await pool.query(query, [limit, offset])
-            : await pool.query(query);
+            ? await pool.query(query, [req.tenant.id, limit, offset])
+            : await pool.query(query, [req.tenant.id]);
         console.log('[INVENTORY SERVICE]: End Process SUCCESS - Inventory data retrieved successfully.');
 
         console.log("[INVENTORY SERVICE]: Compose Audit Logs")
@@ -27,7 +28,7 @@ export const readInventoryService = async (req, res, next) => {
             tableName: 'inventory',
             recordId: null,
             oldData: null,
-            newData: null,
+            newData: { tenantId: req.tenant.id },
         })
         try {
             await composeAuditLogs(auditEntry);
@@ -46,7 +47,7 @@ export const readInventoryService = async (req, res, next) => {
         }));
 
         if (hasPagination) {
-            const countResult = await pool.query('SELECT COUNT(*)::int AS total FROM inventory');
+            const countResult = await pool.query('SELECT COUNT(*)::int AS total FROM inventory WHERE tenant_id = $1', [req.tenant.id]);
             const total = countResult.rows[0].total;
 
             return res.status(200).json({
@@ -87,11 +88,11 @@ export const addInvetoryItemService = async (req, res, next) => {
 
         const result = await client.query(
             `
-            INSERT INTO inventory (name, sku, quantity, unit)
-            VALUES ($1, $2, $3, $4)
-            RETURNING id, name, sku, quantity, unit, created_at
+            INSERT INTO inventory (tenant_id, name, sku, quantity, unit)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id, tenant_id, name, sku, quantity, unit, created_at
             `,
-            [name, sku ?? null, quantity ?? 0, unit ?? 'unit']
+            [req.tenant.id, name, sku ?? null, quantity ?? 0, unit ?? 'unit']
         );
 
         const item = result.rows[0];
@@ -156,12 +157,12 @@ export const updateInventoryItemService = async (req, res, next) => {
 
         const existingResult = await client.query(
             `
-            SELECT id, name, sku, quantity, unit, created_at, updated_at
+            SELECT id, tenant_id, name, sku, quantity, unit, created_at, updated_at
             FROM inventory
-            WHERE id = $1
+            WHERE id = $1 AND tenant_id = $2
             FOR UPDATE
             `,
-            [req.params.id]
+            [req.params.id, req.tenant.id]
         );
 
         const oldItem = existingResult.rows[0];
@@ -178,10 +179,10 @@ export const updateInventoryItemService = async (req, res, next) => {
                 quantity = $3,
                 unit = $4,
                 updated_at = NOW()
-            WHERE id = $5
-            RETURNING id, name, sku, quantity, unit, created_at, updated_at
+            WHERE id = $5 AND tenant_id = $6
+            RETURNING id, tenant_id, name, sku, quantity, unit, created_at, updated_at
             `,
-            [name, sku ?? null, quantity ?? 0, unit ?? 'unit', req.params.id]
+            [name, sku ?? null, quantity ?? 0, unit ?? 'unit', req.params.id, req.tenant.id]
         );
 
         const item = result.rows[0];
