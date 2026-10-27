@@ -1,138 +1,79 @@
 import { pool } from '../../db/pool.js';
 import { compareToPattern, inRangeOfLength } from '../../util/validations.js';
-import { composeAuditLogs } from '../../audit_logs/auditLogService.js';
-import { auditLog } from '../../audit_logs/auditLog.js';
 
-export const inventoryMiddleware = async (req, res, next) => {
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const quantityIsValid = (value) => Number.isSafeInteger(value) && value >= 0 && value <= 2147483647;
+const parseQuantity = (value) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string' && /^\d+$/.test(value)) return Number(value);
+    return Number.NaN;
+};
+
+export const inventoryMiddleware = (req, res, next) => {
+    const body = req.body;
+    if (!isPlainObject(body)) {
+        return res.status(400).json({ message: 'A JSON object is required.' });
+    }
+
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    const sku = typeof body.sku === 'string' ? body.sku.trim().toUpperCase() : '';
+    const unit = body.unit === undefined ? 'unit' : body.unit;
+    const quantity = body.quantity === undefined ? 0 : parseQuantity(body.quantity);
+
+    if (!compareToPattern(name, 'alphanumeric') || !inRangeOfLength(name, 3, 50)) {
+        return res.status(400).json({ message: 'Inventory name must be 3 to 50 alphanumeric characters.' });
+    }
+    if (!compareToPattern(sku, 'sku') || !inRangeOfLength(sku, 3, 20)) {
+        return res.status(400).json({ message: 'SKU must be 3 to 20 characters using letters, numbers, and hyphens.' });
+    }
+    if (!quantityIsValid(quantity)) {
+        return res.status(400).json({ message: 'Quantity must be a non-negative 32-bit integer.' });
+    }
+    if (typeof unit !== 'string' || !inRangeOfLength(unit.trim(), 1, 50)) {
+        return res.status(400).json({ message: 'Unit must be 1 to 50 characters.' });
+    }
+
+    req.body = { name, sku, quantity, unit: unit.trim() };
+    return next();
+};
+
+export const updateInventoryMiddleware = async (req, res, next) => {
+    const id = req.params.id;
+    const body = req.body;
+    if (!/^\d+$/.test(id ?? '') || !Number.isSafeInteger(Number(id)) || Number(id) < 1) {
+        return res.status(400).json({ message: 'Invalid inventory item ID.' });
+    }
+    if (!isPlainObject(body)) {
+        return res.status(400).json({ message: 'A JSON object is required.' });
+    }
+
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    const sku = typeof body.sku === 'string' ? body.sku.trim().toUpperCase() : '';
+    const unit = typeof body.unit === 'string' ? body.unit.trim() : '';
+    const quantity = parseQuantity(body.quantity);
+
+    if (!compareToPattern(name, 'alphanumeric') || !inRangeOfLength(name, 3, 50)) {
+        return res.status(400).json({ message: 'Inventory name must be 3 to 50 alphanumeric characters.' });
+    }
+    if (!compareToPattern(sku, 'sku') || !inRangeOfLength(sku, 3, 20)) {
+        return res.status(400).json({ message: 'SKU must be 3 to 20 characters using letters, numbers, and hyphens.' });
+    }
+    if (!quantityIsValid(quantity)) {
+        return res.status(400).json({ message: 'Quantity must be a non-negative 32-bit integer.' });
+    }
+    if (!inRangeOfLength(unit, 1, 50)) {
+        return res.status(400).json({ message: 'Unit must be 1 to 50 characters.' });
+    }
+
     try {
-        console.log("[INVENTORY MIDDLEWARE]: Start Process - Inventory middleware.");
-        const { name, unit } = req.body;
-
-        const rawSku = req.body.sku;
-        const sku = typeof rawSku === 'string'
-            ? rawSku.trim().toUpperCase()
-            : null;
-
-        const rawQuantity = req.body.quantity;
-        const quantity = rawQuantity === undefined
-            ? undefined
-            : Number(rawQuantity);
-
-
-        if (!name || typeof name !== 'string' || !name.trim()) {
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
-            const auditEntry = auditLog({
-                userId: req.user.id,
-                action: 'EMPTY/NULL ITEM NAME',
-                tableName: 'inventory',
-                recordId: null,
-                oldData: null,
-                newData: { name, quantity, unit, sku },
-            });
-            await composeAuditLogs(auditEntry);
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
-
-            console.log("[INVENTORY MIDDLEWARE]: End Process - Empty/null inventory name.");
-            return res.status(400).json({ message: 'Invalid inventory name.' });
+        const existingItem = await pool.query('SELECT 1 FROM inventory WHERE id = $1', [id]);
+        if (existingItem.rowCount === 0) {
+            return res.status(404).json({ message: 'Inventory item not found.' });
         }
 
-        if(!compareToPattern(name, "alphanumeric") || !inRangeOfLength(name, 3, 50)) {
-
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
-            const auditEntry = auditLog({
-                userId: req.user.id,
-                action: 'INVALID INVENTORY ITEM NAME',
-                tableName: 'inventory',
-                recordId: null,
-                oldData: null,
-                newData: { name, quantity, unit, sku },
-            });
-            await composeAuditLogs(auditEntry);
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
-
-            console.log("[INVENTORY MIDDLEWARE]: End Process - Item name must be alphanumeric and between 3 to 50 characters.");
-            return res.status(400).json({ message: 'Inventory name must be alphanumeric and between 3 to 50 characters.' });
-        }
-
-        if (!sku) {
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
-            const auditEntry = auditLog({
-                userId: req.user.id,
-                action: 'NULL/EMPTY INVENTORY SKU VALUE',
-                tableName: 'inventory',
-                recordId: null,
-                oldData: null,
-                newData: { name, quantity, unit, sku },
-            });
-            await composeAuditLogs(auditEntry);
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
-
-            console.log("[INVENTORY MIDDLEWARE]: End Process - Null/empty inventory SKU value.");
-            return res.status(400).json({ message: 'Invalid inventory SKU.' });
-        }
-
-        if(!compareToPattern(sku, "sku") || !inRangeOfLength(sku, 3, 20)) {
-
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
-            const auditEntry = auditLog({
-                userId: req.user.id,
-                action: 'INVALID SKU VALUE',
-                tableName: 'inventory',
-                recordId: null,
-                oldData: null,
-                newData: { name, quantity, unit, sku },
-            });
-            await composeAuditLogs(auditEntry);
-
-            console.log("[INVENTORY MIDDLEWARE]: End Process - Invalid SKU.");
-            return res.status(400).json({ message: 'Invalid SKU.' });
-        }
-
-        if (quantity !== undefined && (!Number.isInteger(quantity) || quantity < 0)) {
-
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
-            const auditEntry = auditLog({
-                userId: req.user.id,
-                action: 'INVALID QUANTITY VALUE',
-                tableName: 'inventory',
-                recordId: null,
-                oldData: null,
-                newData: { name, quantity, unit, sku },
-            });
-            await composeAuditLogs(auditEntry);
-
-            console.log("[INVENTORY MIDDLEWARE]: End Process - Invalid inventory quantity.");
-            return res.status(400).json({ message: 'Invalid inventory quantity.' });
-        }
-
-        const duplicateCheckQuery = 'SELECT EXISTS (SELECT 1 FROM inventory where sku = $1) AS exists';
-        const duplicateCheckResult = await pool.query(duplicateCheckQuery, [sku]);
-        if (duplicateCheckResult.rows[0].exists) {
-            console.log("[INVENTORY MIDDLEWARE]: Compose Audit Logs");
-            const auditEntry = auditLog({
-                userId: req.user.id,
-                action: 'DUPLICATE INVENTORY ITEM',
-                tableName: 'inventory',
-                recordId: null,
-                oldData: null,
-                newData: { name, quantity, unit, sku },
-            });
-            await composeAuditLogs(auditEntry);
-
-            console.log("[INVENTORY MIDDLEWARE]: End Process - Item already exists.");
-            
-            return res.status(400).json({ message: 'Inventory item with this SKU already exists.' });
-        }
-
-        req.body = {
-            ...req.body,
-            quantity,
-            sku,
-        }
-
+        req.body = { name, sku, quantity, unit };
         return next();
-    } catch(error) {
-        console.error("[INVENTORY MIDDLEWARE]: End Process - Error during inventory middleware:", error);
-        return res.status(500).json({ message: 'Internal server error during inventory middleware.' });
+    } catch (error) {
+        return next(error);
     }
 };

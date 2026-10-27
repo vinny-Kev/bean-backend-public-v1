@@ -1,54 +1,60 @@
 import { findCurrentUserById } from "../../auth/services/currentUserService.js";
 import { destroySession } from "../../util/sessionUtils.js";
+import { config } from "../../config.js";
 
 const absoluteSessionLifetime = 1000 * 60 *60 * 6;
+const clearSessionCookie = (res) => res.clearCookie('bean.sid', {
+    httpOnly: true,
+    secure: config.cookieSecure,
+    sameSite: config.cookieSameSite,
+    path: '/',
+});
+
 export const sessionAuthMiddleware = async (req, res, next) => {
     const userId = req.session?.userId;
     const authenticatedAt = req.session?.authenticatedAt;
-   
 
-    if(!userId || !authenticatedAt) {
-        console.log("[SESSION AUTH MIDDLEWARE]: End Process - No valid session found. User is not authenticated.");
+    if (!userId) {
         return res.status(401).json({ message: 'Unauthorized. Please authenticate.' });
+    }
+    if (!Number.isSafeInteger(authenticatedAt) || authenticatedAt > Date.now()) {
+        try {
+            await destroySession(req);
+            clearSessionCookie(res);
+            return res.status(401).json({ message: 'Unauthorized. Please authenticate.' });
+        } catch (error) {
+            return next(error);
+        }
     }
     const sessionAge = Date.now() - authenticatedAt;
 
     if(sessionAge >= absoluteSessionLifetime) {
         try {
             await destroySession(req);
-            res.clearCookie('bean.sid', {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                path: '/'
-        });
-            console.log("[SESSION AUTH MIDDLEWARE]: End Process - Session expired. User is not authenticated.");
+            clearSessionCookie(res);
             return res.status(401).json({ message: 'Session expired. Please log in again.' });
         }
         catch (error) {
-            console.error("[SESSION AUTH MIDDLEWARE]: End Process - Error destroying expired session:", error);
-            return res.status(500).json({ message: 'Internal server error during session expiration handling.' });
+            return next(error);
         }
     }
 
     try {
         const user = await findCurrentUserById(userId);
         if(!user) {
-            console.log("[SESSION AUTH MIDDLEWARE]: End Process - User not found or is disabled/deleted.");
-            return res.status(401).json({ message: 'Unauthorized. User not found or is disabled/deleted.' });
+            await destroySession(req);
+            clearSessionCookie(res);
+            return res.status(401).json({ message: 'Unauthorized. Please authenticate.' });
         }
         req.user = {
             id: user.id,
             email: user.email,
             username: user.username,
-            role_id: user.role_id,  
+            roleId: user.roleId,
         };
-    
-    console.log("[SESSION AUTH MIDDLEWARE]: End Process SUCCESS - Session authentication passed. User is authenticated.");
     return next();
 
     } catch (error) {
-        console.error("[SESSION AUTH MIDDLEWARE]: End Process - Error during session authentication:", error);
-        return res.status(500).json({ message: 'Internal server error during session authentication.' });
+        return next(error);
     }
 }

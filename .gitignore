@@ -1,9 +1,17 @@
 .env
-.node
-node_modules
-package-lock.json
-package.json
-README.md
-TODO2026-10-01.md
-tests
+.env.*
+!.env.example
+
+node_modules/
+logs/
+*.log
+coverage/
+
+*.dump
+*.backup
+local-db-dumps/
+
+# Local API client exports and abandoned scratch tests are not part of the source suite.
+tests/requestly-collection.json
+src/middleware/tests/
 documentation/
