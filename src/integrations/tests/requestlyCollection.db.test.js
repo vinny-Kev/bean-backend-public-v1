@@ -31,7 +31,8 @@ describe('Requestly end-to-end collection', { skip, concurrency: false }, () => 
         await pool.query(`INSERT INTO roles (name) VALUES ('dev') ON CONFLICT DO NOTHING;
             INSERT INTO permissions (name) VALUES ('INTEGRATIONS_READ'), ('INVENTORY_READ'), ('INVENTORY_CREATE'), ('INVENTORY_UPDATE')
             ON CONFLICT DO NOTHING;
-            INSERT INTO role_permissions (role_id, permission_id) SELECT r.id, p.id FROM roles r, permissions p WHERE r.name='dev'
+            INSERT INTO role_permissions (role_id, permission_id) SELECT r.id, p.id FROM roles r, permissions p
+                WHERE r.name='dev' AND p.name NOT LIKE 'PLATFORM\\_%'
             ON CONFLICT DO NOTHING;`);
         server = await startTestServer({ realSessions: true });
     });

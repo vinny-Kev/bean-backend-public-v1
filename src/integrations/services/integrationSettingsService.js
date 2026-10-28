@@ -3,11 +3,9 @@ import { auditLog } from '../../audit_logs/auditLog.js';
 import { composeAuditLogs } from '../../audit_logs/auditLogService.js';
 import { INVENTORY_SHORTAGE_POLICIES } from './integrationPolicy.js';
 import { parsePositiveId } from '../../util/validations.js';
+import { findMembershipRole } from '../../tenants/middleware/tenantAccessMiddleware.js';
 
-const requireTenantAdmin = async (tenantId, userId) => {
-    const result = await pool.query('SELECT membership_role FROM tenant_members WHERE tenant_id=$1 AND user_id=$2', [tenantId, userId]);
-    return ['owner', 'admin'].includes(result.rows[0]?.membership_role);
-};
+const requireTenantAdmin = async (tenantId, userId) => ['owner', 'admin'].includes(await findMembershipRole(pool, tenantId, userId));
 
 export const getIntegrationSettings = async (req, res, next) => {
     try {
@@ -33,7 +31,8 @@ export const updateInventoryShortagePolicy = async (req, res, next) => {
         client = await pool.connect();
         await client.query('BEGIN');
         const member = await client.query(
-            'SELECT membership_role FROM tenant_members WHERE tenant_id=$1 AND user_id=$2 FOR SHARE', [tenantId, req.user.id],
+            `SELECT tm.membership_role FROM tenant_members tm JOIN tenants t ON t.id=tm.tenant_id
+             WHERE tm.tenant_id=$1 AND tm.user_id=$2 AND t.status<>'deleted' FOR SHARE OF tm`, [tenantId, req.user.id],
         );
         if (!['owner', 'admin'].includes(member.rows[0]?.membership_role)) {
             await client.query('ROLLBACK');
@@ -52,7 +51,7 @@ export const updateInventoryShortagePolicy = async (req, res, next) => {
              SELECT tenant_id,id,$2,'inventory.shortage_policy.updated','succeeded',$3
              FROM integrated_apps WHERE tenant_id=$1`, [tenantId, req.user.id, req.requestId],
         );
-        await composeAuditLogs(auditLog({ userId: req.user.id, action: 'UPDATE INTEGRATION INVENTORY POLICY',
+        await composeAuditLogs(auditLog({ userId: req.user.id, tenantId, action: 'UPDATE INTEGRATION INVENTORY POLICY',
             tableName: 'tenant_integration_settings', recordId: tenantId,
             newData: { tenantId, inventoryShortagePolicy: policy } }), client);
         await client.query('COMMIT');
@@ -61,7 +60,7 @@ export const updateInventoryShortagePolicy = async (req, res, next) => {
             updatedAt: result.rows[0].updated_at,
         } });
     } catch (error) {
-        await client.query('ROLLBACK').catch(() => {});
+        if (client) await client.query('ROLLBACK').catch(() => {});
         return next(error);
     } finally { client?.release(); }
 };

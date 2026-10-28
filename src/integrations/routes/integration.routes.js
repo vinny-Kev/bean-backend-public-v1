@@ -59,9 +59,9 @@ router.get('/all/:tenant_id',
 router.get('/:integration_id/activity', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), paginationMiddleware, getIntegrationActivity);
 router.get('/:integration_id/audit', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), paginationMiddleware, getIntegrationAuditHistory);
 router.get('/:integration_id/analytics', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), getIntegrationAnalytics);
-router.post('/:integration_id/credentials/rotate', credentialRotationLimiter, sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), rotateIntegrationCredential);
+router.post('/:integration_id/credentials/rotate', credentialRotationLimiter, sessionAuthMiddleware, requirePermission('INTEGRATIONS_MANAGE'), rotateIntegrationCredential);
 router.get('/tenants/:tenant_id/settings', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), getIntegrationSettings);
-router.put('/tenants/:tenant_id/settings/inventory-policy', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), updateInventoryShortagePolicy);
+router.put('/tenants/:tenant_id/settings/inventory-policy', sessionAuthMiddleware, requirePermission('INTEGRATIONS_MANAGE'), updateInventoryShortagePolicy);
 
 router.post('/:integration_id/events',
     integrationEventLimiter,
@@ -73,17 +73,18 @@ router.post('/:integration_id/events',
 
 router.get('/events', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), paginationMiddleware, searchIntegrationEvents);
 router.get('/events/:event_id', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), getIntegrationEventDetail);
-router.post('/events/:event_id/retry', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), retryIntegrationEvent);
+router.post('/events/:event_id/retry', sessionAuthMiddleware, requirePermission('INTEGRATIONS_MANAGE'), retryIntegrationEvent);
 router.get('/diagnostics', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), paginationMiddleware, searchIntegrationDiagnostics);
-router.get('/diagnostics/unauthorized', sessionAuthMiddleware, requirePermission('AUDIT_READ'), paginationMiddleware, searchUnauthorizedIntegrationAttempts);
+router.get('/diagnostics/unauthorized', sessionAuthMiddleware, requirePermission('PLATFORM_AUDIT_READ'), paginationMiddleware, searchUnauthorizedIntegrationAttempts);
 
-// Integration onboarding and lifecycle. Tenant authority comes from tenant_members (owner/admin).
-router.post('/tenants/:tenant_id/apps', sessionAuthMiddleware, integrationRegistrationLimiter, requirePermission('INTEGRATIONS_READ'), createIntegration);
-router.put('/:integration_id/subscriptions', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), updateSubscriptions);
-router.put('/:integration_id/user-mappings', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), upsertUserMapping);
-router.post('/:integration_id/activate', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), activateIntegration);
-router.post('/:integration_id/suspend', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), suspendIntegration);
-router.post('/:integration_id/disconnect', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), disconnectIntegration);
+// Integration onboarding and lifecycle. Every change needs the account-level INTEGRATIONS_MANAGE
+// permission (reading needs INTEGRATIONS_READ); tenant authority comes from tenant_members (owner/admin).
+router.post('/tenants/:tenant_id/apps', sessionAuthMiddleware, integrationRegistrationLimiter, requirePermission('INTEGRATIONS_MANAGE'), createIntegration);
+router.put('/:integration_id/subscriptions', sessionAuthMiddleware, requirePermission('INTEGRATIONS_MANAGE'), updateSubscriptions);
+router.put('/:integration_id/user-mappings', sessionAuthMiddleware, requirePermission('INTEGRATIONS_MANAGE'), upsertUserMapping);
+router.post('/:integration_id/activate', sessionAuthMiddleware, requirePermission('INTEGRATIONS_MANAGE'), activateIntegration);
+router.post('/:integration_id/suspend', sessionAuthMiddleware, requirePermission('INTEGRATIONS_MANAGE'), suspendIntegration);
+router.post('/:integration_id/disconnect', sessionAuthMiddleware, requirePermission('INTEGRATIONS_MANAGE'), disconnectIntegration);
 // Keep last so it cannot shadow /events or /diagnostics.
 router.get('/:integration_id', sessionAuthMiddleware, requirePermission('INTEGRATIONS_READ'), getIntegration);
 

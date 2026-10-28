@@ -45,7 +45,7 @@ export const findIntegrationForMember = async (client, integrationId, userId, { 
          FROM integrated_apps ia
          JOIN tenants t ON t.id=ia.tenant_id
          JOIN tenant_members tm ON tm.tenant_id=ia.tenant_id AND tm.user_id=$2
-         WHERE ia.id=$1 ${lock ? 'FOR UPDATE OF ia' : ''}`,
+         WHERE ia.id=$1 AND t.status<>'deleted' ${lock ? 'FOR UPDATE OF ia' : ''}`,
         [integrationId, userId],
     );
     return result.rows[0] ?? null;
@@ -112,7 +112,7 @@ export const createIntegration = async (req, res, next) => {
         await client.query('BEGIN');
         const member = await client.query(
             `SELECT tm.membership_role, t.status FROM tenant_members tm JOIN tenants t ON t.id=tm.tenant_id
-             WHERE tm.tenant_id=$1 AND tm.user_id=$2 FOR SHARE OF t`, [tenantId, req.user.id],
+             WHERE tm.tenant_id=$1 AND tm.user_id=$2 AND t.status<>'deleted' FOR SHARE OF t`, [tenantId, req.user.id],
         );
         if (!member.rowCount) {
             await client.query('ROLLBACK');
@@ -136,7 +136,7 @@ export const createIntegration = async (req, res, next) => {
         );
         const integration = inserted.rows[0];
         await recordLifecycle(client, { integration, req, action: 'integration.created' });
-        await composeAuditLogs(auditLog({ userId: req.user.id, action: 'CREATE INTEGRATION', tableName: 'integrated_apps',
+        await composeAuditLogs(auditLog({ userId: req.user.id, tenantId, action: 'CREATE INTEGRATION', tableName: 'integrated_apps',
             recordId: integration.id, newData: { tenantId, name, appKey, status: 'pending' } }), client);
         await client.query('COMMIT');
         return res.status(201).json({
@@ -199,7 +199,7 @@ export const updateSubscriptions = (req, res, next) => {
             [integration.id, integration.tenant_id, eventTypes],
         );
         await recordLifecycle(client, { integration, req, action: 'subscriptions.updated' });
-        await composeAuditLogs(auditLog({ userId: req.user.id, action: 'UPDATE INTEGRATION SUBSCRIPTIONS', tableName: 'integrated_app_event_subscriptions',
+        await composeAuditLogs(auditLog({ userId: req.user.id, tenantId: integration.tenant_id, action: 'UPDATE INTEGRATION SUBSCRIPTIONS', tableName: 'integrated_app_event_subscriptions',
             recordId: integration.id, newData: { tenantId: integration.tenant_id, enabledEventTypes: eventTypes } }), client);
         return { status: 200, body: { message: 'Subscriptions updated.', data: { integrationId: integration.id, enabledEventTypes: eventTypes } } };
     });
@@ -232,7 +232,7 @@ export const upsertUserMapping = (req, res, next) => {
             [integration.tenant_id, integration.id, externalUserId, userId, isActive],
         );
         await recordLifecycle(client, { integration, req, action: 'user_mapping.updated' });
-        await composeAuditLogs(auditLog({ userId: req.user.id, action: 'UPDATE INTEGRATION USER MAPPING', tableName: 'integration_user_mappings',
+        await composeAuditLogs(auditLog({ userId: req.user.id, tenantId: integration.tenant_id, action: 'UPDATE INTEGRATION USER MAPPING', tableName: 'integration_user_mappings',
             recordId: mapping.rows[0].id, newData: { tenantId: integration.tenant_id, integrationId: integration.id, externalUserId, userId, isActive } }), client);
         return { status: 200, body: { message: 'User mapping saved.', data: {
             id: mapping.rows[0].id, externalUserId, userId, isActive: mapping.rows[0].is_active } } };
@@ -268,7 +268,7 @@ const transition = ({ action, auditAction, from, to, requireReady = false, extra
                 [integration.id, integration.tenant_id]);
         }
         await recordLifecycle(client, { integration, req, action });
-        await composeAuditLogs(auditLog({ userId: req.user.id, action: auditAction, tableName: 'integrated_apps', recordId: integration.id,
+        await composeAuditLogs(auditLog({ userId: req.user.id, tenantId: integration.tenant_id, action: auditAction, tableName: 'integrated_apps', recordId: integration.id,
             oldData: { status: integration.status }, newData: { tenantId: integration.tenant_id, status: to } }), client);
         return { status: 200, body: { message: `Integration ${to === 'revoked' ? 'disconnected' : to}.`,
             data: integrationView({ ...updated.rows[0] }) } };

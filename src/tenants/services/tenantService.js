@@ -26,7 +26,7 @@ export const createTenant = async (req, res, next) => {
         await client.query(
             `INSERT INTO tenant_members (tenant_id, user_id, membership_role) VALUES ($1,$2,'owner')`, [created.id, req.user.id],
         );
-        await composeAuditLogs(auditLog({ userId: req.user.id, action: 'CREATE TENANT', tableName: 'tenants',
+        await composeAuditLogs(auditLog({ userId: req.user.id, tenantId: created.id, action: 'CREATE TENANT', tableName: 'tenants',
             recordId: created.id, newData: { name, slug, ownerUserId: req.user.id } }), client);
         await client.query('COMMIT');
         return res.status(201).json({ message: 'Tenant created.', data: {

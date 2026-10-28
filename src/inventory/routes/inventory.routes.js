@@ -5,12 +5,12 @@ import { sessionAuthMiddleware } from "../../middleware/auth/sessionAuthMiddlewa
 import { requirePermission } from "../../middleware/auth/permissionMiddleware.js";
 import {readInventoryService,addInvetoryItemService,updateInventoryItemService,} from "../services/inventoryService.js";
 import {inventoryMiddleware,updateInventoryMiddleware,} from "../../middleware/inventory/inventoryMiddleware.js";
-import { log } from "../../util/breadcrumb.js";
+import { breadcrumb, log } from "../../util/breadcrumb.js";
 import { paginationMiddleware } from "../../middleware/fetch/paginationMiddleware.js";
 import { requireTenantMember } from "../../tenants/middleware/tenantAccessMiddleware.js";
 
 router.get("/health/", (req, res) => {
-  log("INVENTORY_HEALTH", "INVENTORY ROUTE START");
+  breadcrumb("INVENTORY_HEALTH", "INVENTORY ROUTE START");
   res.json({ message: "Inventory route is working!" });
 });
 

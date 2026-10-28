@@ -71,8 +71,8 @@ The onboarding folder runs 76 requests with about 170 assertions, in dependency 
 
 | Account | How it is provisioned | Role (account permissions) | In the onboarding tenant |
 |---|---|---|---|
-| founder (`founder.requestly@example.test`) | seeded | `onboarding_founder`: `TENANTS_CREATE`, `INTEGRATIONS_READ`, `INVENTORY_READ/CREATE/UPDATE` | owner (creates it) |
-| manager (`manager.requestly@example.test`) | seeded | `onboarding_employee`: `INTEGRATIONS_READ`, `INVENTORY_READ` | admin |
+| founder (`founder.requestly@example.test`) | seeded | `onboarding_founder`: `TENANTS_CREATE`, `INTEGRATIONS_READ`, `INTEGRATIONS_MANAGE`, `INVENTORY_READ/CREATE/UPDATE` | owner (creates it) |
+| manager (`manager.requestly@example.test`) | seeded | `onboarding_employee`: `INTEGRATIONS_READ`, `INVENTORY_READ` (read-only: no `INTEGRATIONS_MANAGE`) | admin |
 | cashier (`rqcashier`, `cashier.requestly@example.test`) | seeded | `onboarding_employee` | member |
 | new hire (`newhire.<run>@example.test`) | **created by the collection** | none | member (added by the manager) |
 | rival owner (`rival.requestly@example.test`) | seeded, owns the seeded tenant `requestly-rival` with item `RIVAL-1` | `onboarding_founder` | not a member (cross-tenant checks) |
@@ -85,6 +85,20 @@ The seed script creates its own test roles (`onboarding_founder`, `onboarding_em
 DATABASE_URL= DB_HOST=127.0.0.1 DB_PORT=5432 DB_NAME=bean_requestly_test DB_USER=<local user> DB_PASSWORD=<local password> \
 REQUESTLY_TEST_PASSWORD='Onboard!Test1' node tests/requestly/seed-onboarding.mjs
 ```
+
+### Running against the shared staging database (Neon)
+
+The connected Neon database is staging. Every run writes to it: a new-hire account, a tenant, an app, events and a sale. Staging needs, once:
+
+1. **Migrations 005–009**, applied in order with the Neon SQL editor or `psql -v ON_ERROR_STOP=1 -f`, **before** the backend code that needs them is deployed. 005 adds `TENANTS_CREATE` and grants it to `dev`. 006 adds `INTEGRATIONS_MANAGE`. 007 adds `audit_logs.tenant_id`, which every audited write now uses, so the backend returns `500` on audited operations without it. 008 and 009 add inventory and account constraints. See `db/reconciliation/2026-10-28-legacy-data.md`.
+2. **The seed, with an explicit opt-in.** From `backend/`, using the normal `.env`:
+   ```sh
+   REQUESTLY_TEST_PASSWORD='Onboard!Test1' node tests/requestly/seed-onboarding.mjs --target=staging
+   ```
+   The script refuses and prints the hostname that `DATABASE_URL` points at. If that host is your staging database, re-run with `REQUESTLY_STAGING_HOST=<that hostname>` added.
+3. **A backend with a fast worker.** Start it with `INTEGRATION_WORKER_INTERVAL_MS=2000 npm run dev`. With the default 5-minute interval, the "Wait for the worker" step gives up after 90 seconds.
+
+Each run leaves its new-hire account and tenant behind. Those are test data, and they can't be bulk-deleted through the API.
 
 ## Import and configure
 

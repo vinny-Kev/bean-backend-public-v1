@@ -123,7 +123,7 @@ const recoverExpiredLeases = async (client) => {
     await client.query('BEGIN');
     try {
         const expired = await client.query(
-            `SELECT id, attempt_count, automatic_attempt_count, correlation_id FROM integration_events
+            `SELECT id, tenant_id, attempt_count, automatic_attempt_count, correlation_id FROM integration_events
              WHERE status = 'processing' AND lease_expires_at <= NOW()
              ORDER BY lease_expires_at FOR UPDATE SKIP LOCKED LIMIT $1`,
             [config.integrationWorkerBatchSize],
@@ -148,7 +148,7 @@ const recoverExpiredLeases = async (client) => {
                  WHERE integration_event_id=$1 AND attempt_number=$4 AND outcome='started'`,
                 [event.id, outcome, retryAt, event.attempt_count],
             );
-            await composeAuditLogs(auditLog({ action: 'RECOVER INTEGRATION EVENT LEASE',
+            await composeAuditLogs(auditLog({ tenantId: event.tenant_id, action: 'RECOVER INTEGRATION EVENT LEASE',
                 tableName: 'integration_events', recordId: event.id,
                 newData: { status: retryAt ? 'pending' : 'failed', errorCode: 'WORKER_LEASE_EXPIRED', retryAt } }), client);
         }
@@ -228,7 +228,7 @@ const processClaimedEvent = async (client, event) => {
              WHERE integration_event_id=$1 AND attempt_number=$2 AND outcome='started'`,
             [event.id, event.attempt_count],
         );
-        await composeAuditLogs(auditLog({ action: 'PROCESS INTEGRATION EVENT', tableName: 'integration_events',
+        await composeAuditLogs(auditLog({ tenantId: event.tenant_id, action: 'PROCESS INTEGRATION EVENT', tableName: 'integration_events',
             recordId: event.id, newData: { eventType: event.event_type, handler: event.handler_key, status: 'processed' } }), client);
         await client.query('COMMIT');
         return 'processed';
@@ -258,7 +258,7 @@ const processClaimedEvent = async (client, event) => {
                 [event.id, event.attempt_count, retryAt ? 'retry_scheduled' : 'failed',
                     failure.code, failure.summary, failure.classification, retryAt],
             );
-            await composeAuditLogs(auditLog({ action: 'FAIL INTEGRATION EVENT', tableName: 'integration_events',
+            await composeAuditLogs(auditLog({ tenantId: event.tenant_id, action: 'FAIL INTEGRATION EVENT', tableName: 'integration_events',
                 recordId: event.id, newData: { eventType: event.event_type, handler: event.handler_key,
                     status, errorCode: failure.code, retryAt } }), client);
             await client.query('COMMIT');

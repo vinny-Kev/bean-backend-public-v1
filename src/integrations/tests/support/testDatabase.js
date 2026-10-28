@@ -48,12 +48,13 @@ export const seedFixtures = async () => {
         INSERT INTO tenants (id, name, slug, status) OVERRIDING SYSTEM VALUE
             VALUES (1, 'Acme', 'acme', 'active'), (2, 'Globex', 'globex', 'active');
         INSERT INTO roles (name) VALUES ('dev'), ('staff') ON CONFLICT (name) DO NOTHING;
-        INSERT INTO permissions (name) VALUES ('INTEGRATIONS_READ'), ('INVENTORY_READ'), ('INVENTORY_CREATE'),
-            ('INVENTORY_UPDATE'), ('TENANTS_CREATE') ON CONFLICT (name) DO NOTHING;
-        -- dev has every permission; staff has the same minus TENANTS_CREATE.
+        INSERT INTO permissions (name) VALUES ('INTEGRATIONS_READ'), ('INTEGRATIONS_MANAGE'), ('INVENTORY_READ'), ('INVENTORY_CREATE'),
+            ('INVENTORY_UPDATE'), ('TENANTS_CREATE'), ('AUDIT_READ') ON CONFLICT (name) DO NOTHING;
+        -- dev has every tenant-facing permission; staff has the same minus TENANTS_CREATE.
+        -- Platform permissions (PLATFORM_*) are never part of a role fixture; tests grant them explicitly.
         INSERT INTO role_permissions (role_id, permission_id)
             SELECT r.id, p.id FROM roles r, permissions p
-            WHERE r.name='dev' OR (r.name='staff' AND p.name<>'TENANTS_CREATE')
+            WHERE p.name NOT LIKE 'PLATFORM\\_%' AND (r.name='dev' OR (r.name='staff' AND p.name<>'TENANTS_CREATE'))
             ON CONFLICT DO NOTHING;
         -- Users 1-4 are dev; user 4 belongs to no tenant; user 5 has no role at all;
         -- user 6 is staff and an admin of tenant 1 (a tenant role without account-level tenant creation).
@@ -104,6 +105,24 @@ export const saleEvent = (overrides = {}, payloadOverrides = {}) => ({
         ...payloadOverrides,
     },
 });
+
+// Simulates inventory rows created before migration 008: the NOT VALID constraint is dropped
+// for the insert and re-added, so later inserts are still checked and these rows are not.
+export const insertLegacyInventory = async (rows) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query('ALTER TABLE inventory DROP CONSTRAINT inventory_tenant_required');
+        for (const { name, sku, quantity = 0 } of rows) {
+            await client.query('INSERT INTO inventory (tenant_id, name, sku, quantity) VALUES (NULL, $1, $2, $3)', [name, sku, quantity]);
+        }
+        await client.query('ALTER TABLE inventory ADD CONSTRAINT inventory_tenant_required CHECK (tenant_id IS NOT NULL) NOT VALID');
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw error;
+    } finally { client.release(); }
+};
 
 export const one = async (sql, values) => (await pool.query(sql, values)).rows[0];
 export const count = async (sql, values) => Number((await pool.query(sql, values)).rows[0].count);

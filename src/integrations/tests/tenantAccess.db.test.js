@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe } from 'node:test';
 import { pool } from '../../db/pool.js';
 import { integrationTest as test, reportBlockedIntegrationCheck } from './integrationTestReporter.js';
-import { count, one, resetSchema, seedFixtures, testDatabaseSkipReason } from './support/testDatabase.js';
+import { count, insertLegacyInventory, one, resetSchema, seedFixtures, testDatabaseSkipReason } from './support/testDatabase.js';
 import { startTestServer } from './support/testServer.js';
 
 if (testDatabaseSkipReason) {
@@ -199,7 +199,7 @@ describe('tenant onboarding, member management, and tenant isolation against Pos
     });
 
     test('inventory reads and writes are confined to the caller\'s tenant', async () => {
-        await pool.query(`INSERT INTO inventory (tenant_id, name, sku, quantity) VALUES (NULL, 'Legacy', 'LEGACY-1', 3)`);
+        await insertLegacyInventory([{ name: 'Legacy', sku: 'LEGACY-1', quantity: 3 }]);
         const mine = await api('GET', '/inventory/tenants/1/items', { user: 2 });
         assert.equal(mine.status, 200);
         assert.deepEqual(mine.body.data.map((item) => [item.id, item.sku, item.quantity]), [['1', 'BEAN-42', 10]],

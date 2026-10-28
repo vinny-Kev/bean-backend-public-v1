@@ -2,7 +2,7 @@
 
 ## Authority model
 
-- **Account permissions** come from `users.role_id → role_permissions → permissions`. `requirePermission` checks them live on each request. They decide *what* a user may do: `TENANTS_CREATE`, `INTEGRATIONS_READ`, `INVENTORY_*`, and so on.
+- **Account permissions** come from `users.role_id → role_permissions → permissions`. `requirePermission` checks them live on each request. They decide *what* a user may do: `TENANTS_CREATE`, `INTEGRATIONS_READ`/`INTEGRATIONS_MANAGE`, `INVENTORY_*`, `AUDIT_READ`, and so on. `PLATFORM_*` permissions (currently `PLATFORM_AUDIT_READ`) are for platform operators and unlock cross-tenant views; no migration grants them to any role.
 - **Tenant roles** come from `tenant_members.membership_role` (`owner`, `admin`, `member`). They decide *whose* data a user may touch and who manages membership. A tenant role never grants an account permission.
 - A tenant ID in a URL is only a selector. `requireTenantMember` (`middleware/tenantAccessMiddleware.js`) resolves it against the caller's membership. Non-members and deleted tenants get `404`; a missing tenant role gets `403`.
 
@@ -25,6 +25,8 @@ All of these require a session. Unsafe methods also require a trusted `Origin`.
 | `POST /tenants/:tenant_id/members` | owner, admin | `{ email \| username, role? }` adds an **existing active account**; there are no email invitations |
 | `PATCH /tenants/:tenant_id/members/:user_id` | owner | `{ role }` |
 | `DELETE /tenants/:tenant_id/members/:user_id` | owner, admin, or self | removing yourself means leaving |
+| `GET /audit/tenants/:tenant_id` | `AUDIT_READ` + owner, admin | this tenant's audit entries only (`audit_logs.tenant_id`); paginated like `/audit/all`. Entries written before migration 007 have no tenant and appear only in the platform view |
+| `GET /audit/all` | `PLATFORM_AUDIT_READ` | every tenant's audit entries; platform operators only |
 
 Membership rules:
 - **Owners** add members with any role, change other members' roles, and remove anyone else.

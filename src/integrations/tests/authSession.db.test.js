@@ -5,6 +5,7 @@ import { pool } from '../../db/pool.js';
 import { integrationTest as test, reportBlockedIntegrationCheck } from './integrationTestReporter.js';
 import { count, one, resetSchema, seedFixtures, testDatabaseSkipReason } from './support/testDatabase.js';
 import { startTestServer, trustedOrigin } from './support/testServer.js';
+import { signupUserService } from '../../auth/services/signupUserService.js';
 
 const skip = testDatabaseSkipReason || (!trustedOrigin && 'APP_ORIGINS must contain at least one origin for the CSRF origin check.');
 if (skip) reportBlockedIntegrationCheck('PostgreSQL authentication and session tests', 'a local *_test database and APP_ORIGINS', `skipped: ${skip}`);
@@ -46,6 +47,37 @@ describe('registration, login, session, and logout with real sessions against Po
         assert.equal((await api('POST', '/auth/signup', { body: { username: 'x', email: 'bad', password: 'weak' } })).status, 400);
         assert.equal((await api('POST', '/auth/signup', { body: { username: 'nocsrf', email: 'n@example.test', password }, origin: null })).status, 403,
             'unsafe requests without a trusted Origin are rejected');
+    });
+
+    test('email and username are unique regardless of case, even when signups race past the pre-check', async () => {
+        // Both requests have already passed validateSignupData's existence check, which is the race window.
+        const signup = (username, email) => new Promise((resolve, reject) => {
+            const res = { status(code) { this.code = code; return this; }, json(body) { resolve({ status: this.code, body }); } };
+            signupUserService({ body: { username, email, password } }, res, reject);
+        });
+        const raced = await Promise.all([signup('RaceUser', 'race1@example.test'), signup('raceuser', 'race2@example.test')]);
+        assert.deepEqual(raced.map((r) => r.status).sort(), [201, 409]);
+        assert.equal(await count(`SELECT COUNT(*) FROM users WHERE LOWER(username)='raceuser'`), 1);
+        assert.equal(JSON.stringify(raced).includes('users_'), false, 'constraint names are not exposed');
+
+        await assert.rejects(createAccount('AcmeOwner', 'someone@example.test'), { constraint: 'users_username_lower_key' });
+        await assert.rejects(createAccount('someone', 'Owner@Acme.TEST'), { constraint: 'users_email_lower_key' });
+    });
+
+    test('login and /auth/me return only safe identity fields', async () => {
+        const api = client();
+        await createAccount('safeuser', 'safe@example.test');
+        const login = await api('POST', '/auth/login', { body: { email: 'SAFE@example.test', password } });
+        assert.equal(login.status, 200);
+        assert.deepEqual(Object.keys(login.body).sort(), ['message', 'user']);
+        assert.deepEqual(Object.keys(login.body.user).sort(), ['email', 'id', 'roleId', 'username']);
+        const me = await api('GET', '/auth/me');
+        assert.deepEqual(Object.keys(me.body.user).sort(), ['email', 'id', 'permissions', 'roleId', 'username']);
+        const sid = (await one('SELECT sid FROM session LIMIT 1')).sid;
+        for (const body of [login.body, me.body]) {
+            assert.equal(/password|hash|sid|session|cookie/i.test(JSON.stringify(body)), false);
+            assert.equal(JSON.stringify(body).includes(sid), false);
+        }
     });
 
     test('login creates an HttpOnly session, /auth/me reflects the account, and logout ends it', async () => {

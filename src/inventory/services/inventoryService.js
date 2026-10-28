@@ -24,6 +24,7 @@ export const readInventoryService = async (req, res, next) => {
         console.log("[INVENTORY SERVICE]: Compose Audit Logs")
         const auditEntry = auditLog({
             userId: req.user.id,
+            tenantId: req.tenant.id,
             action: 'READ INVENTORY',
             tableName: 'inventory',
             recordId: null,
@@ -104,6 +105,7 @@ export const addInvetoryItemService = async (req, res, next) => {
         console.log("[INVENTORY SERVICE]: Compose Audit Logs")
         const auditEntry = auditLog({
             userId: req.user.id,
+            tenantId: req.tenant.id,
             action: 'CREATE INVENTORY',
             tableName: 'inventory',
             recordId: item.id,
@@ -194,6 +196,7 @@ export const updateInventoryItemService = async (req, res, next) => {
         console.log("[INVENTORY SERVICE]: Compose Audit Logs")
         const auditEntry = auditLog({
             userId: req.user.id,
+            tenantId: req.tenant.id,
             action: 'UPDATE INVENTORY',
             tableName: 'inventory',
             recordId: item.id,

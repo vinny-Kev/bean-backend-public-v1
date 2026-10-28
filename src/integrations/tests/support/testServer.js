@@ -6,6 +6,7 @@ import { pool } from '../../../db/pool.js';
 import { requireTrustedOrigin } from '../../../middleware/auth/originMiddleware.js';
 import { errorHandler, notFoundHandler, requestContext } from '../../../middleware/errorMiddleware.js';
 import authRoutes from '../../../auth/routes/auth.routes.js';
+import auditRoutes from '../../../audit_logs/routes/audit.routes.js';
 import inventoryRoutes from '../../../inventory/routes/inventory.routes.js';
 import integrationRoutes from '../../routes/integration.routes.js';
 import tenantRoutes from '../../../tenants/routes/tenant.routes.js';
@@ -39,6 +40,7 @@ export const startTestServer = async ({ realSessions = false } = {}) => {
         app.use(fakeSession);
     }
     app.use('/auth/', authRoutes);
+    app.use('/audit/', auditRoutes);
     app.use('/inventory/', inventoryRoutes);
     app.use('/integrations/', integrationRoutes);
     app.use('/tenants/', tenantRoutes);

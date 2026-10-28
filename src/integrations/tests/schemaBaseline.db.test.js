@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe } from 'node:test';
 import { pool } from '../../db/pool.js';
 import { integrationTest as test } from './integrationTestReporter.js';
-import { resetSchema, seedFixtures, testDatabaseSkipReason } from './support/testDatabase.js';
+import { insertLegacyInventory, resetSchema, seedFixtures, testDatabaseSkipReason } from './support/testDatabase.js';
 
 // Behavioral checks of partial indexes that ORM/console schema exports drop.
 describe('baseline schema behavior', { skip: testDatabaseSkipReason, concurrency: false }, () => {
@@ -38,6 +38,18 @@ describe('baseline schema behavior', { skip: testDatabaseSkipReason, concurrency
 
     test('inventory SKU uniqueness is per tenant and ignores tenantless legacy rows', async () => {
         await assert.rejects(pool.query(`INSERT INTO inventory (tenant_id, name, sku) VALUES (1, 'Dup', 'BEAN-42')`), { constraint: 'uq_inventory_tenant_sku' });
-        await pool.query(`INSERT INTO inventory (tenant_id, name, sku) VALUES (NULL, 'Legacy A', 'LEGACY'), (NULL, 'Legacy B', 'LEGACY')`);
+        await insertLegacyInventory([{ name: 'Legacy A', sku: 'LEGACY' }, { name: 'Legacy B', sku: 'LEGACY' }]);
+        assert.equal((await pool.query(`SELECT COUNT(*)::int AS n FROM inventory WHERE tenant_id IS NULL`)).rows[0].n, 2);
+    });
+
+    test('new inventory rows must have a tenant; existing legacy rows are left alone', async () => {
+        await assert.rejects(pool.query(`INSERT INTO inventory (tenant_id, name, sku) VALUES (NULL, 'Orphan', 'ORPHAN-1')`),
+            { constraint: 'inventory_tenant_required' });
+        await assert.rejects(pool.query(`UPDATE inventory SET tenant_id=NULL WHERE id=1`), { constraint: 'inventory_tenant_required' });
+        const legacy = (await pool.query(`SELECT id FROM inventory WHERE tenant_id IS NULL ORDER BY id LIMIT 1`)).rows[0].id;
+        await assert.rejects(pool.query(`UPDATE inventory SET quantity=quantity+1 WHERE id=$1`, [legacy]), { constraint: 'inventory_tenant_required' },
+            'a legacy row must be reconciled (given a tenant) before it can change');
+        await assert.rejects(pool.query('ALTER TABLE inventory VALIDATE CONSTRAINT inventory_tenant_required'), { code: '23514' },
+            'validation fails until legacy rows are reconciled');
     });
 });

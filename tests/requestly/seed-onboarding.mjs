@@ -19,7 +19,7 @@ export const RIVAL_TENANT = Object.freeze({ slug: 'requestly-rival', name: 'Requ
 
 // Test-only roles, so existing roles such as `dev` are never modified.
 const ROLE_PERMISSIONS = {
-    onboarding_founder: ['TENANTS_CREATE', 'INTEGRATIONS_READ', 'INVENTORY_READ', 'INVENTORY_CREATE', 'INVENTORY_UPDATE'],
+    onboarding_founder: ['TENANTS_CREATE', 'INTEGRATIONS_READ', 'INTEGRATIONS_MANAGE', 'INVENTORY_READ', 'INVENTORY_CREATE', 'INVENTORY_UPDATE'],
     onboarding_employee: ['INTEGRATIONS_READ', 'INVENTORY_READ'],
 };
 
@@ -62,12 +62,23 @@ export const seedOnboardingFixtures = async (db, password) => {
     }
 };
 
-// CLI: guarded by the same rule as the database tests (local host, *_test database, no DATABASE_URL).
+// CLI. By default only a local *_test database is accepted (the database-test guard). A shared
+// staging database needs both `--target=staging` and REQUESTLY_STAGING_HOST set to the exact
+// hostname DATABASE_URL points at, so a wrong .env cannot be seeded by accident.
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     const { testDatabaseSkipReason } = await import('../../src/integrations/tests/support/testDatabase.js');
+    const { config } = await import('../../src/config.js');
     const { pool } = await import('../../src/db/pool.js');
     try {
-        if (testDatabaseSkipReason) throw new Error(`Refusing to seed: ${testDatabaseSkipReason}`);
+        const host = config.database.connectionString ? new URL(config.database.connectionString).hostname : config.database.host;
+        if (process.argv.includes('--target=staging')) {
+            if (process.env.REQUESTLY_STAGING_HOST !== host) {
+                throw new Error(`Refusing to seed: set REQUESTLY_STAGING_HOST=${host} to confirm this is the staging database you mean.`);
+            }
+            console.log(`Seeding staging database at ${host}.`);
+        } else if (testDatabaseSkipReason) {
+            throw new Error(`Refusing to seed: ${testDatabaseSkipReason} (for a shared staging database, see --target=staging in tests/requestly/README.md)`);
+        }
         const password = process.env.REQUESTLY_TEST_PASSWORD;
         if (!password) throw new Error('Set REQUESTLY_TEST_PASSWORD to the password configured in the collection (test_password).');
         const result = await seedOnboardingFixtures(pool, password);
