@@ -37,7 +37,9 @@ export const requirePermission = (requiredPermission) => {
 
  
             if (!result.rows[0].has_all_permissions) {
-                return res.status(403).json({ message: 'Forbidden: You do not have the required permissions.' });
+                // `message` is the original contract; `error` adds the common shape and a stable code.
+                const message = 'Forbidden: You do not have the required permissions.';
+                return res.status(403).json({ message, error: { code: 'PERMISSION_REQUIRED', message } });
             }
 
             return next();

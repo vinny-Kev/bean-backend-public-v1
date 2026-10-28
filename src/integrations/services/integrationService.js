@@ -31,6 +31,8 @@ export const getTenantIntegrations = async (req, res, next) => {
                 FROM integrated_apps ia
                 INNER JOIN tenant_members tm
                     ON tm.tenant_id = ia.tenant_id
+                INNER JOIN tenants t
+                    ON t.id = ia.tenant_id AND t.status <> 'deleted'
                 WHERE ia.tenant_id = $1
                     AND tm.user_id = $2
                 ORDER BY ia.created_at DESC, ia.id DESC
@@ -45,6 +47,7 @@ export const getTenantIntegrations = async (req, res, next) => {
         if (result.rows.length > 0) {
             const auditEntry = auditLog({
                 userId: req.user.id,
+                tenantId,
                 action: 'GET TENANT INTEGRATIONS',
                 tableName: 'integrations',
                 recordId: null,
@@ -81,6 +84,7 @@ export const getTenantIntegrations = async (req, res, next) => {
             const countResult = await pool.query(
                 `SELECT COUNT(*)::int AS total FROM integrated_apps ia
                  JOIN tenant_members tm ON tm.tenant_id = ia.tenant_id
+                 JOIN tenants t ON t.id = ia.tenant_id AND t.status <> 'deleted'
                  WHERE ia.tenant_id = $1 AND tm.user_id = $2`,
                 [tenantId, req.user.id],
             );
@@ -118,6 +122,16 @@ export const receiveIntegrationEvent = async (req, res, next) => {
     try {
         const integrationId = req.integration.id;
         const event = req.integrationEvent;
+        // Diagnostics written here commit or roll back with the ingestion transaction.
+        const recordDiagnostic = (outcome, httpStatus, errorCode = null, errorSummary = null) => client.query(
+            `INSERT INTO integration_event_diagnostics
+                (tenant_id, integrated_app_id, request_id, event_id, event_type,
+                 external_transaction_id, correlation_id, outcome, error_code, error_summary, http_status)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+            [req.integration.tenantId, integrationId, req.requestId, event.eventId, event.eventType,
+                typeof event.payload.externalTransactionId === 'string' ? event.payload.externalTransactionId.slice(0, 255) : null,
+                event.correlationId, outcome, errorCode, errorSummary, httpStatus],
+        );
         client = await pool.connect();
         await client.query('BEGIN');
         // The integration row is updated (last_event_at) later in this transaction. Taking the
@@ -141,15 +155,7 @@ export const receiveIntegrationEvent = async (req, res, next) => {
                     ?? (kind === 'sale' ? validateBusinessEvent('transaction.completed', event.payload)
                         : validateBusinessEvent('inventory.adjusted', event.payload));
         if (policyError) {
-            await client.query(
-                `INSERT INTO integration_event_diagnostics
-                    (tenant_id, integrated_app_id, request_id, event_id, event_type,
-                     external_transaction_id, correlation_id, outcome, error_code, error_summary, http_status)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,'invalid','EVENT_POLICY_CHANGED',$8,422)`,
-                [req.integration.tenantId, integrationId, req.requestId, event.eventId, event.eventType,
-                    typeof event.payload.externalTransactionId === 'string' ? event.payload.externalTransactionId.slice(0, 255) : null,
-                    event.correlationId, policyError.slice(0, 500)],
-            );
+            await recordDiagnostic('invalid', 422, 'EVENT_POLICY_CHANGED', policyError.slice(0, 500));
             await client.query('COMMIT');
             return res.status(422).json({ error: { code: 'EVENT_POLICY_CHANGED',
                 message: 'Event authorization or validation policy changed before acceptance.' } });
@@ -164,15 +170,7 @@ export const receiveIntegrationEvent = async (req, res, next) => {
                 event.correlationId],
         );
         if (!dedupe.rowCount) {
-            await client.query(
-                `INSERT INTO integration_event_diagnostics
-                    (tenant_id, integrated_app_id, request_id, event_id, event_type,
-                     external_transaction_id, correlation_id, outcome, http_status)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,'duplicate',200)`,
-                [req.integration.tenantId, integrationId, req.requestId, event.eventId, event.eventType,
-                    typeof event.payload.externalTransactionId === 'string' ? event.payload.externalTransactionId.slice(0, 255) : null,
-                    event.correlationId],
-            );
+            await recordDiagnostic('duplicate', 200);
             await client.query('COMMIT');
             return res.status(200).json({ message: 'Integration event was already received.',
                 data: { integrationId, eventId: event.eventId, status: 'duplicate' } });
@@ -186,15 +184,7 @@ export const receiveIntegrationEvent = async (req, res, next) => {
                 currentPolicy.handler_key, event.occurredAt, event.correlationId, JSON.stringify(event.payload)],
         );
         if (result.rowCount === 0) {
-            await client.query(
-                `INSERT INTO integration_event_diagnostics
-                    (tenant_id, integrated_app_id, request_id, event_id, event_type,
-                     external_transaction_id, correlation_id, outcome, http_status)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,'duplicate',200)`,
-                [req.integration.tenantId, integrationId, req.requestId, event.eventId, event.eventType,
-                    typeof event.payload.externalTransactionId === 'string' ? event.payload.externalTransactionId.slice(0, 255) : null,
-                    event.correlationId],
-            );
+            await recordDiagnostic('duplicate', 200);
             await client.query('COMMIT');
             return res.status(200).json({
                 message: 'Integration event was already queued.',
@@ -202,15 +192,7 @@ export const receiveIntegrationEvent = async (req, res, next) => {
             });
         }
         await client.query('UPDATE integrated_apps SET last_event_at = NOW(), updated_at = NOW() WHERE id = $1', [integrationId]);
-        await client.query(
-            `INSERT INTO integration_event_diagnostics
-                (tenant_id, integrated_app_id, request_id, event_id, event_type,
-                 external_transaction_id, correlation_id, outcome, http_status)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,'accepted',202)`,
-            [req.integration.tenantId, integrationId, req.requestId, event.eventId, event.eventType,
-                typeof event.payload.externalTransactionId === 'string' ? event.payload.externalTransactionId.slice(0, 255) : null,
-                event.correlationId],
-        );
+        await recordDiagnostic('accepted', 202);
         await client.query('COMMIT');
         return res.status(202).json({
             message: 'Integration event accepted for processing.',

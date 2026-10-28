@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
@@ -5,6 +6,9 @@ import { pool } from '../../db/pool.js';
 import { recordIntegrationDiagnostic } from '../services/integrationDiagnostics.js';
 import { resolveIntegrationHandlerKind } from '../services/integrationHandlerRegistry.js';
 import { compareToPattern, parsePositiveId } from '../../util/validations.js';
+
+// Same cost as generateIntegrationCredential; matches no secret anyone holds.
+const dummyCredentialHash = bcrypt.hash(randomBytes(48).toString('base64url'), 12);
 
 const denied = (req, res) => {
     void recordIntegrationDiagnostic({ req, outcome: 'unauthorized', errorCode: 'INTEGRATION_AUTH_FAILED',
@@ -44,10 +48,12 @@ export const requireIntegrationOrigin = async (req, res, next) => {
              WHERE ia.id = $1`, [rawId],
         );
         const integration = result.rows[0];
-        if (!integration || integration.status !== 'active' || integration.tenant_status !== 'active'
-            || integration.app_key !== appKey
-            || typeof integration.credential_hash !== 'string'
-            || !await bcrypt.compare(match[1], integration.credential_hash)) return denied(req, res);
+        const usable = integration && integration.status === 'active' && integration.tenant_status === 'active'
+            && integration.app_key === appKey && typeof integration.credential_hash === 'string';
+        // Always pay for one bcrypt comparison so response timing does not reveal which
+        // integration IDs exist or are active.
+        const matches = await bcrypt.compare(match[1], usable ? integration.credential_hash : await dummyCredentialHash);
+        if (!usable || !matches) return denied(req, res);
         req.integration = { id: integration.id, tenantId: integration.tenant_id };
         return next();
     } catch (error) {
@@ -135,7 +141,7 @@ export const validateAndAuthorizeIntegrationEvent = async (req, res, next) => {
     }
     try {
         const result = await pool.query(
-            `SELECT er.event_type, er.payload_schema
+            `SELECT er.event_type, er.payload_schema, er.handler_key
              FROM event_registry er
              JOIN integrated_app_event_subscriptions s
                ON s.event_type = er.event_type
@@ -149,10 +155,7 @@ export const validateAndAuthorizeIntegrationEvent = async (req, res, next) => {
         if (!registered) return reject(422, 'EVENT_NOT_SUBSCRIBED', 'Event type is not registered and enabled for this integration.');
         const issue = validateAgainstSchema(event.payload, registered.payload_schema);
         if (issue) return reject(400, 'INVALID_EVENT_PAYLOAD', issue);
-        const handlerResult = await pool.query(
-            `SELECT handler_key FROM event_registry WHERE event_type=$1 AND is_active=true`, [event.eventType],
-        );
-        const handlerKind = resolveIntegrationHandlerKind(handlerResult.rows[0]?.handler_key);
+        const handlerKind = resolveIntegrationHandlerKind(registered.handler_key);
         if (!handlerKind) {
             return reject(422, 'UNSUPPORTED_HANDLER', 'This registered event type has no supported handler.');
         }

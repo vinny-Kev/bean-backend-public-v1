@@ -25,6 +25,7 @@ export const rotateIntegrationCredential = async (req, res, next) => {
         const result = await client.query(
             `SELECT ia.id, ia.tenant_id, ia.app_key, ia.status, tm.membership_role
              FROM integrated_apps ia JOIN tenant_members tm ON tm.tenant_id=ia.tenant_id
+             JOIN tenants t ON t.id=ia.tenant_id AND t.status<>'deleted'
              WHERE ia.id=$1 AND ia.tenant_id=$2 AND tm.user_id=$3 FOR UPDATE OF ia,tm`,
             [integrationId, tenantId, req.user.id],
         );
@@ -52,7 +53,7 @@ export const rotateIntegrationCredential = async (req, res, next) => {
              VALUES ($1,$2,$3,'credential.rotated','succeeded',$4)`,
             [tenantId, integrationId, req.user.id, req.requestId],
         );
-        await composeAuditLogs(auditLog({ userId: req.user.id, action: 'ROTATE INTEGRATION CREDENTIAL',
+        await composeAuditLogs(auditLog({ userId: req.user.id, tenantId, action: 'ROTATE INTEGRATION CREDENTIAL',
             tableName: 'integrated_apps', recordId: integrationId,
             newData: { tenantId, integrationId, appKey: integration.app_key,
                 rotatedAt: new Date().toISOString(), outcome: 'succeeded' } }), client);

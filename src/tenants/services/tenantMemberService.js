@@ -53,7 +53,7 @@ const countOwners = async (client, tenantId) => Number((await client.query(
     `SELECT COUNT(*) FROM tenant_members WHERE tenant_id=$1 AND membership_role='owner'`, [tenantId])).rows[0].count);
 
 const audit = (client, req, action, targetUserId, oldRole, newRole) => composeAuditLogs(auditLog({
-    userId: req.user.id, action, tableName: 'tenant_members', recordId: targetUserId,
+    userId: req.user.id, tenantId: req.tenant.id, action, tableName: 'tenant_members', recordId: targetUserId,
     oldData: oldRole ? { tenantId: req.tenant.id, userId: targetUserId, membershipRole: oldRole } : null,
     newData: newRole ? { tenantId: req.tenant.id, userId: targetUserId, membershipRole: newRole } : null,
 }), client);

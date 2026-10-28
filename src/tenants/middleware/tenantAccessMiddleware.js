@@ -3,6 +3,13 @@ import { parsePositiveId } from '../../util/validations.js';
 
 export const TENANT_ROLES = Object.freeze(['owner', 'admin', 'member']);
 
+// The caller's role in a tenant that has not been deleted, or null; the same rule as
+// requireTenantMember, for services that take the tenant ID from a query or body.
+export const findMembershipRole = async (client, tenantId, userId) => (await client.query(
+    `SELECT tm.membership_role FROM tenant_members tm JOIN tenants t ON t.id=tm.tenant_id
+     WHERE tm.tenant_id=$1 AND tm.user_id=$2 AND t.status<>'deleted'`, [tenantId, userId],
+)).rows[0]?.membership_role ?? null;
+
 // Resolves :tenant_id against the caller's membership. The URL value only selects a
 // tenant; authority comes from tenant_members. Non-members (and deleted tenants) get
 // 404 so tenant IDs cannot be probed. Services that change membership re-check the

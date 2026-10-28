@@ -3482,7 +3482,7 @@
                       "// Saves a value for later requests only when it exists; failed assertions explain why it is missing.",
                       "const capture = (key, read) => { try { const value = read(); if (value !== undefined && value !== null) rq.variables.set(key, String(value)); } catch (error) { /* left unset */ } };",
                       "rq.test('HTTP 403', () => { rq.expect(rq.response.code).to.equal(403); });",
-                      "rq.test('error.code is TENANT_ADMIN_REQUIRED', () => { rq.expect(body && body.error && body.error.code).to.equal('TENANT_ADMIN_REQUIRED'); });"
+                      "rq.test('error.code is PERMISSION_REQUIRED', () => { rq.expect(body && body.error && body.error.code).to.equal('PERMISSION_REQUIRED'); });"
                     ]
                   }
                 }
@@ -3507,7 +3507,7 @@
                     "suspend"
                   ]
                 },
-                "description": "Expected: 403 TENANT_ADMIN_REQUIRED. Plain members cannot manage integrations."
+                "description": "Expected: 403 PERMISSION_REQUIRED. The cashier account has INTEGRATIONS_READ but not INTEGRATIONS_MANAGE, so it cannot manage integrations (tenant owner/admin membership is also required)."
               },
               "response": []
             },

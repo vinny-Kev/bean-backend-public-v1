@@ -2,11 +2,9 @@ import { pool } from '../../db/pool.js';
 import { auditLog } from '../../audit_logs/auditLog.js';
 import { composeAuditLogs } from '../../audit_logs/auditLogService.js';
 import { compareToPattern, parsePositiveId, parseTimestampRange } from '../../util/validations.js';
+import { findMembershipRole } from '../../tenants/middleware/tenantAccessMiddleware.js';
 
-const tenantAccess = async (tenantId, userId) => {
-    const result = await pool.query('SELECT membership_role FROM tenant_members WHERE tenant_id=$1 AND user_id=$2', [tenantId, userId]);
-    return result.rows[0]?.membership_role ?? null;
-};
+const tenantAccess = (tenantId, userId) => findMembershipRole(pool, tenantId, userId);
 
 const eventView = (row) => ({
     id: row.id,
@@ -229,7 +227,7 @@ export const retryIntegrationEvent = async (req, res, next) => {
             await client.query('ROLLBACK');
             return res.status(409).json({ message: 'This event is not eligible for manual retry.' });
         }
-        await composeAuditLogs(auditLog({ userId: req.user.id, action: 'RETRY INTEGRATION EVENT',
+        await composeAuditLogs(auditLog({ userId: req.user.id, tenantId, action: 'RETRY INTEGRATION EVENT',
             tableName: 'integration_events', recordId: eventId,
             newData: { eventId: result.rows[0].event_id, eventType: result.rows[0].event_type,
                 correlationId: result.rows[0].correlation_id, reason } }), client);
