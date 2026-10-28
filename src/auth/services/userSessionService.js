@@ -33,6 +33,18 @@ export const loginUser = async (req, res, next) => {
 
 export const logoutUser = async (req, res, next) => {
     try {
+        const userId = req.session?.userId;
+        if (userId) {
+            // Logging out must always succeed, so a failed audit write is reported but not fatal.
+            await composeAuditLogs(auditLog({
+                userId,
+                action: 'LOGOUT',
+                tableName: 'session',
+                recordId: userId,
+            })).catch(() => {
+                console.error(JSON.stringify({ event: 'logout_audit_failed', requestId: req.requestId }));
+            });
+        }
         if (req.session) await destroySession(req);
         res.clearCookie('bean.sid', {
             httpOnly: true,

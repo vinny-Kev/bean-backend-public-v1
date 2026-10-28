@@ -6,7 +6,12 @@
   "scripts": {
     "test": "node --test",
     "test:db": "node --test --test-concurrency=1 \"src/integrations/tests/*.db.test.js\"",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "docs:api": "node scripts/api-docs/build.mjs",
+    "check:api": "node scripts/api-docs/check-coverage.mjs",
+    "migrate:status": "node scripts/migrate.mjs status",
+    "migrate:apply": "node scripts/migrate.mjs apply",
+    "audit:deps": "npm audit --omit=dev"
   },
   "keywords": [],
   "author": "",
