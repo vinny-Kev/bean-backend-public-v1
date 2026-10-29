@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import 'dotenv/config';
 
 const required = (name) => {
@@ -63,6 +64,57 @@ if (sameSite === 'none' && nodeEnv !== 'production') {
     throw new Error('COOKIE_SAME_SITE=None requires NODE_ENV=production and HTTPS.');
 }
 
+// Identity and mail. SMTP settings are only read (and required) for the smtp transport.
+const parseBoolean = (name, value, fallback) => {
+    if (value === undefined || value === '') return fallback;
+    if (!['true', 'false'].includes(value.toLowerCase())) throw new Error(`${name} must be true or false.`);
+    return value.toLowerCase() === 'true';
+};
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const mailTransport = (process.env.MAIL_TRANSPORT ?? (nodeEnv === 'production' ? 'smtp' : nodeEnv === 'test' ? 'capture' : 'outbox')).toLowerCase();
+if (!['smtp', 'outbox', 'capture'].includes(mailTransport)) {
+    throw new Error('MAIL_TRANSPORT must be smtp, outbox (development: writes messages to .mail-outbox/) or capture (tests).');
+}
+if (nodeEnv === 'production' && mailTransport !== 'smtp') {
+    throw new Error('MAIL_TRANSPORT must be smtp in production.');
+}
+let mail = { transport: mailTransport };
+const mailFromAddress = process.env.MAIL_FROM_ADDRESS?.trim() || 'no-reply@bean.invalid';
+if (mailTransport === 'smtp' || process.env.MAIL_FROM_ADDRESS) {
+    if (!emailPattern.test(mailFromAddress)) throw new Error('MAIL_FROM_ADDRESS must be a valid email address.');
+}
+mail = { ...mail, fromAddress: mailFromAddress, fromName: process.env.MAIL_FROM_NAME?.trim() || 'Bean' };
+if (mailTransport === 'smtp') {
+    const smtpUser = process.env.SMTP_USER?.trim();
+    const smtpPassword = process.env.SMTP_PASSWORD;
+    if (Boolean(smtpUser) !== Boolean(smtpPassword)) throw new Error('SMTP_USER and SMTP_PASSWORD must be set together.');
+    const smtpPort = parseInteger('SMTP_PORT', process.env.SMTP_PORT ?? '587', { min: 1, max: 65535 });
+    mail = {
+        ...mail,
+        host: required('SMTP_HOST'),
+        port: smtpPort,
+        // true = implicit TLS (usually port 465); false = STARTTLS is required, never plaintext.
+        secure: parseBoolean('SMTP_SECURE', process.env.SMTP_SECURE, smtpPort === 465),
+        ...(smtpUser && { user: smtpUser, password: smtpPassword }),
+    };
+    required('MAIL_FROM_ADDRESS');
+}
+
+// Links in emails are built only from this trusted origin, never from request headers.
+const appBaseUrl = (process.env.APP_BASE_URL?.trim() || allowedOrigins[0] || '').replace(/\/+$/, '');
+if (appBaseUrl && !allowedOrigins.includes(appBaseUrl)) {
+    throw new Error('APP_BASE_URL must be one of the APP_ORIGINS entries.');
+}
+if (nodeEnv === 'production' && !appBaseUrl) throw new Error('APP_BASE_URL is required in production.');
+
+const otpPepper = process.env.OTP_PEPPER?.trim()
+    || createHmac('sha256', sessionSecret).update('bean:identity-pepper:v1').digest('hex');
+if (otpPepper.length < 32) throw new Error('OTP_PEPPER must be at least 32 characters long.');
+
+const loginStepUp = (process.env.LOGIN_STEP_UP ?? 'new-device').toLowerCase();
+if (!['new-device', 'off'].includes(loginStepUp)) throw new Error('LOGIN_STEP_UP must be new-device or off.');
+
 const databaseUrl = process.env.DATABASE_URL?.trim();
 let database;
 if (databaseUrl) {
@@ -101,6 +153,10 @@ export const config = Object.freeze({
     host: process.env.HOST?.trim() || '127.0.0.1',
     port: parseInteger('PORT', process.env.PORT ?? '3000', { min: 1, max: 65535 }),
     sessionSecret,
+    mail: Object.freeze(mail),
+    appBaseUrl,
+    otpPepper,
+    loginStepUp,
     cookieSameSite: sameSite,
     cookieSecure: nodeEnv === 'production',
     allowedOrigins: new Set(allowedOrigins),

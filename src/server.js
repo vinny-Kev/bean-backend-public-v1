@@ -17,6 +17,8 @@ import { startIntegrationEventWorker } from './integrations/services/integration
 import { startIntegrationRetentionWorker } from './integrations/services/integrationRetentionService.js';
 import ticketRoutes from './ticketing/routes/ticket.routes.js';
 import healthRoutes from './health/routes/health.routes.js';
+import onboardingRoutes from './auth/routes/onboarding.routes.js';
+import invitationRoutes from './invitations/routes/invitation.routes.js';
 const app = express();
 const PostgresSessionStore = connectPgSimple(session);
 const sessionStore = new PostgresSessionStore({ pool, createTableIfMissing: true });
@@ -73,6 +75,8 @@ app.use('/inventory/', inventoryRoutes);
 app.use('/audit/', auditRoutes);
 app.use('/integrations/', integrationRoutes);
 app.use('/tenants/', tenantRoutes);
+app.use('/invitations/', invitationRoutes);
+app.use('/onboarding/', onboardingRoutes);
 app.use('/ticketing/', ticketRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);

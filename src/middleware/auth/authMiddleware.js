@@ -1,46 +1,38 @@
 import { compareToPattern, inRangeOfLength, isPlainObject } from '../../util/validations.js';
+import { isValidEmail, isValidFullName, isValidNewPassword, normalizeEmail, normalizeFullName, passwordMessage } from '../../identity/identityHelpers.js';
 import { pool } from '../../db/pool.js';
 import bcrypt from 'bcrypt';
 import { auditLog } from '../../audit_logs/auditLog.js';
 import { composeAuditLogs } from '../../audit_logs/auditLogService.js';
 
-export const validateSignupData = async (req, res, next) => {
+export const validateSignupData = (req, res, next) => {
     const body = req.body;
     if (!isPlainObject(body)) {
         return res.status(400).json({ message: 'A JSON object is required.' });
     }
 
+    const fullName = normalizeFullName(body.fullName);
     const username = typeof body.username === 'string' ? body.username.trim() : '';
-    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const email = normalizeEmail(body.email);
     const password = body.password;
 
+    if (!isValidFullName(fullName)) {
+        return res.status(400).json({ message: 'Enter your full name (2 to 100 characters, letters, spaces, hyphens and apostrophes).' });
+    }
     if (!username || !compareToPattern(username, 'alphanumeric') || !inRangeOfLength(username, 3, 20)) {
         return res.status(400).json({ message: 'Username must be 3 to 20 alphanumeric characters.' });
     }
-    if (!email || email.length > 254 || !compareToPattern(email, 'email')) {
+    if (!isValidEmail(email)) {
         return res.status(400).json({ message: 'A valid email address is required.' });
     }
-    if (typeof password !== 'string' || Buffer.byteLength(password, 'utf8') > 72
-        || !compareToPattern(password, 'password') || !inRangeOfLength(password, 8, 20)) {
-        return res.status(400).json({
-            message: 'Password must be 8 to 20 characters, include upper and lower case letters, a number and a symbol, and use at most 72 UTF-8 bytes.',
-        });
+    if (!isValidNewPassword(password)) {
+        return res.status(400).json({ message: passwordMessage });
     }
 
-    try {
-        const existing = await pool.query(
-            'SELECT EXISTS (SELECT 1 FROM users WHERE LOWER(email) = $1 OR LOWER(username) = LOWER($2)) AS exists',
-            [email, username],
-        );
-        if (existing.rows[0].exists) {
-            return res.status(409).json({ message: 'An account with those details already exists.' });
-        }
-
-        req.body = { username, email, password };
-        return next();
-    } catch (error) {
-        return next(error);
-    }
+    // Existence is decided inside the signup transaction (unique indexes), not here, so a
+    // concurrent duplicate cannot slip through and the response cannot reveal registered emails.
+    req.body = { fullName, username, email, password };
+    return next();
 };
 
 export const validateLoginData = async (req, res, next) => {
@@ -54,7 +46,7 @@ export const validateLoginData = async (req, res, next) => {
 
     try {
         const result = await pool.query(
-            `SELECT id, email, username, password_hash, role_id
+            `SELECT id, email, username, full_name, email_verified_at, password_hash, role_id
              FROM users
              WHERE LOWER(email) = $1 AND is_disabled = false AND deleted_at IS NULL`,
             [email],
@@ -80,10 +72,15 @@ export const validateLoginData = async (req, res, next) => {
             return res.status(401).json({ message: 'Invalid email or password.' });
         }
 
+        if (!user.email_verified_at) {
+            // Correct password, but the address was never proven: no session until it is.
+            return res.status(403).json({ error: { code: 'EMAIL_NOT_VERIFIED', message: 'Verify your email address to sign in.', requestId: req.requestId } });
+        }
         req.user = {
             id: user.id,
             email: user.email,
             username: user.username,
+            fullName: user.full_name,
             roleId: user.role_id,
         };
         return next();

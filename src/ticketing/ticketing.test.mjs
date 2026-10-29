@@ -34,7 +34,7 @@ const baseTicket = () => ({
 });
 
 const query = async (sql, params = []) => {
-    if (sql.includes('FROM users WHERE id')) {
+    if (/FROM users\s+WHERE id/.test(sql)) {
         return { rows: [{ id: 3, username: 'tester', email: 'tester@example.test', role_id: 1 }] };
     }
     queries.push({ sql, params });

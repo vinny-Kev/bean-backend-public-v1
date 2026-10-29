@@ -137,6 +137,7 @@ export const tenants = [
         purpose: 'Creates an organization and makes the caller its `owner` in one transaction.',
         auth: { session: true, permission: 'TENANTS_CREATE', tenantRole: null, notes: 'Account-level permission; tenant roles never grant it. Rate limited to 10 creations per hour per user.' },
         prereq: ['Signed in as an account whose role has `TENANTS_CREATE`.'],
+        headers: [{ name: 'Idempotency-Key', value: '{{$guid}}', desc: 'Optional but recommended: 8-100 characters of `A-Za-z0-9_.:-`. A retry with the same key and body replays the first response instead of creating a second organization; the same key with a different body returns 422 `IDEMPOTENCY_KEY_REUSED`.' }],
         preRequest: ["if (!pm.collectionVariables.get('newTenantSlug')) pm.collectionVariables.set('newTenantSlug', 'qa-' + Date.now().toString(36));"],
         body: {
             fields: [
@@ -152,6 +153,7 @@ export const tenants = [
             err.permission,
             err.coded(409, 'TENANT_SLUG_TAKEN', 'That tenant slug is already in use.', 'Duplicate slug.'),
             err.coded(429, 'RATE_LIMITED', 'Too many tenant creation requests.', 'Per-user hourly limit.'),
+            err.coded(422, 'IDEMPOTENCY_KEY_REUSED', 'That Idempotency-Key was already used with different details.', 'Same key, different body.'),
         ],
         sideEffects: ['Inserts `tenants` and an owner `tenant_members` row.', 'Writes a `CREATE TENANT` audit entry in the same transaction.'],
         audit: '`CREATE TENANT` (table `tenants`, tenant-scoped).',

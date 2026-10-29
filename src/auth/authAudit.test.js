@@ -1,4 +1,6 @@
-// Audit behavior of signup, login and logout, against a fake database (no PostgreSQL connection).
+// Audit behavior of login and logout against a fake database (no PostgreSQL connection).
+// Signup, verification and the other identity flows are covered against PostgreSQL in
+// src/identity/identity.db.test.js.
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import bcrypt from 'bcrypt';
@@ -23,14 +25,11 @@ let queries;
 const query = async (sql, params = []) => {
     queries.push({ sql, params });
     if (sql.includes('INSERT INTO audit_logs') && failAudit) throw new Error('audit write failed');
-    if (sql.includes('SELECT EXISTS')) return { rows: [{ exists: false }] };
     if (sql.includes('password_hash') && sql.includes('FROM users')) {
         return { rows: params[0] === 'known@example.test'
-            ? [{ id: 11, email: 'known@example.test', username: 'known', password_hash: passwordHash, role_id: 1 }] : [] };
+            ? [{ id: 11, email: 'known@example.test', username: 'known', full_name: 'Known User', email_verified_at: new Date(), password_hash: passwordHash, role_id: 1 }] : [] };
     }
-    if (sql.includes('INSERT INTO users')) {
-        return { rows: [{ id: 21, email: params[1], username: params[0], created_at: new Date() }] };
-    }
+    if (sql.includes('FROM trusted_devices')) return { rows: [{ total: 0, known: 0 }] };
     return { rows: [] };
 };
 pool.query = query;
@@ -64,36 +63,6 @@ const post = (path, body) => fetch(`${base}/auth${path}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
 });
 const audits = () => queries.filter(({ sql }) => sql.includes('INSERT INTO audit_logs'));
-const signupBody = { username: 'newuser', email: 'new@example.test', password: 'Passw0rd!x' };
-
-test('signup records a SIGNUP audit entry in the same transaction, without email or password', async () => {
-    const response = await post('/signup', signupBody);
-    assert.equal(response.status, 201);
-    const verbs = queries.map(({ sql }) => sql.trim().split(/\s+/).slice(0, 3).join(' '));
-    assert.deepEqual(verbs.filter((v) => /^(BEGIN|COMMIT|ROLLBACK|INSERT INTO)/.test(v)),
-        ['BEGIN', 'INSERT INTO users', 'INSERT INTO audit_logs', 'COMMIT']);
-    const [audit] = audits();
-    assert.equal(audit.params[0], 21, 'actor is the new account');
-    assert.equal(audit.params[1], null, 'no tenant');
-    assert.equal(audit.params[2], 'SIGNUP');
-    assert.equal(JSON.stringify(audit.params).includes('Passw0rd'), false);
-    assert.equal(JSON.stringify(audit.params).includes('new@example.test'), false);
-});
-
-test('signup is rolled back when its audit entry cannot be written', async () => {
-    failAudit = true;
-    const response = await post('/signup', signupBody);
-    assert.equal(response.status, 500);
-    assert.equal(queries.at(-1).sql, 'ROLLBACK');
-    assert.equal(queries.some(({ sql }) => sql === 'COMMIT'), false);
-});
-
-test('invalid signup input writes nothing', async () => {
-    const response = await post('/signup', { ...signupBody, password: 'weak' });
-    assert.equal(response.status, 400);
-    assert.equal(audits().length, 0);
-});
-
 // The login limiter counts failures (3 per window per IP), so the success case runs before them.
 test('successful login records LOGIN_SUCCESS', async () => {
     const response = await post('/login', { email: 'known@example.test', password: 'Passw0rd!x' });

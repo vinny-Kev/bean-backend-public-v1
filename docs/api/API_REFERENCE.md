@@ -1,6 +1,6 @@
 # Bean Enterprise Management API reference
 
-Generated from `scripts/api-docs` (58 endpoints). Do not edit by hand: run `npm run docs:api`. The same content ships as the request descriptions of `postman/Bean-Enterprise-Management.postman_collection.json`.
+Generated from `scripts/api-docs` (76 endpoints). Do not edit by hand: run `npm run docs:api`. The same content ships as the request descriptions of `postman/Bean-Enterprise-Management.postman_collection.json`.
 
 ## Conventions
 
@@ -19,62 +19,80 @@ Generated from `scripts/api-docs` (58 endpoints). Do not edit by hand: run `npm 
 |---|---|---|---|---|---|
 | 1 | GET | `/health` | Liveness | no | - |
 | 2 | GET | `/health/ready` | Readiness | no | - |
-| 3 | POST | `/auth/signup/` | Sign up | no | - |
-| 4 | POST | `/auth/login/` | Log in | no | - |
-| 5 | GET | `/auth/me` | Current user | yes | - |
-| 6 | POST | `/auth/logout` | Log out | no | - |
-| 7 | GET | `/tenants/` | List my tenants | yes | - |
-| 8 | POST | `/tenants/` | Create tenant | yes | `TENANTS_CREATE` |
-| 9 | GET | `/tenants/:tenant_id` | Get tenant | yes | - |
-| 10 | GET | `/tenants/:tenant_id/members` | List members | yes | - |
-| 11 | GET | `/tenants/:tenant_id/members/:user_id` | Get member | yes | - |
-| 12 | POST | `/tenants/:tenant_id/members` | Add member | yes | - |
-| 13 | PATCH | `/tenants/:tenant_id/members/:user_id` | Change member role | yes | - |
-| 14 | DELETE | `/tenants/:tenant_id/members/:user_id` | Remove member / leave tenant | yes | - |
-| 15 | GET | `/inventory/health/` | Inventory route check | no | - |
-| 16 | GET | `/inventory/tenants/:tenant_id/items` | List inventory items | yes | `INVENTORY_READ` |
-| 17 | POST | `/inventory/tenants/:tenant_id/items` | Create inventory item | yes | `INVENTORY_CREATE` |
-| 18 | PUT | `/inventory/tenants/:tenant_id/items/:id` | Update inventory item | yes | `INVENTORY_UPDATE` |
-| 19 | GET | `/audit/all` | Platform audit log (all tenants) | yes | `PLATFORM_AUDIT_READ` |
-| 20 | GET | `/audit/tenants/:tenant_id` | Tenant audit log | yes | `AUDIT_READ` |
-| 21 | GET | `/integrations/all/:tenant_id` | List tenant integrations | yes | `INTEGRATIONS_READ` |
-| 22 | POST | `/integrations/tenants/:tenant_id/apps` | Register integration | yes | `INTEGRATIONS_MANAGE` |
-| 23 | GET | `/integrations/:integration_id` | Get integration | yes | `INTEGRATIONS_READ` |
-| 24 | PUT | `/integrations/:integration_id/subscriptions` | Set event subscriptions | yes | `INTEGRATIONS_MANAGE` |
-| 25 | PUT | `/integrations/:integration_id/user-mappings` | Map external user | yes | `INTEGRATIONS_MANAGE` |
-| 26 | POST | `/integrations/:integration_id/activate` | Activate integration | yes | `INTEGRATIONS_MANAGE` |
-| 27 | POST | `/integrations/:integration_id/suspend` | Suspend integration | yes | `INTEGRATIONS_MANAGE` |
-| 28 | POST | `/integrations/:integration_id/disconnect` | Disconnect integration | yes | `INTEGRATIONS_MANAGE` |
-| 29 | POST | `/integrations/:integration_id/credentials/rotate` | Rotate credential | yes | `INTEGRATIONS_MANAGE` |
-| 30 | GET | `/integrations/tenants/:tenant_id/settings` | Get integration settings | yes | `INTEGRATIONS_READ` |
-| 31 | PUT | `/integrations/tenants/:tenant_id/settings/inventory-policy` | Set inventory shortage policy | yes | `INTEGRATIONS_MANAGE` |
-| 32 | POST | `/integrations/:integration_id/events` | Deliver integration event (app → Bean) | no | - |
-| 33 | GET | `/integrations/events` | Search integration events | yes | `INTEGRATIONS_READ` |
-| 34 | GET | `/integrations/events/:event_id` | Get event timeline | yes | `INTEGRATIONS_READ` |
-| 35 | POST | `/integrations/events/:event_id/retry` | Retry failed event | yes | `INTEGRATIONS_MANAGE` |
-| 36 | GET | `/integrations/diagnostics` | Search delivery diagnostics | yes | `INTEGRATIONS_READ` |
-| 37 | GET | `/integrations/diagnostics/unauthorized` | Unauthorized delivery attempts (platform) | yes | `PLATFORM_AUDIT_READ` |
-| 38 | GET | `/integrations/:integration_id/activity` | Integration activity feed | yes | `INTEGRATIONS_READ` |
-| 39 | GET | `/integrations/:integration_id/audit` | Integration audit history | yes | `INTEGRATIONS_READ` |
-| 40 | GET | `/integrations/:integration_id/analytics` | Integration analytics | yes | `INTEGRATIONS_READ` |
-| 41 | GET | `/ticketing/tenants/:tenantId/inboxes` | List inboxes | yes | - |
-| 42 | POST | `/ticketing/tenants/:tenantId/inboxes` | Create inbox | yes | - |
-| 43 | GET | `/ticketing/tenants/:tenantId/tickets` | List tickets | yes | - |
-| 44 | POST | `/ticketing/tenants/:tenantId/tickets` | Create ticket | yes | - |
-| 45 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId` | Get ticket | yes | - |
-| 46 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId/assignments` | List assignments | yes | - |
-| 47 | POST | `/ticketing/tenants/:tenantId/tickets/:ticketId/assignments` | Assign ticket | yes | - |
-| 48 | POST | `/ticketing/tenants/:tenantId/tickets/:ticketId/acknowledge` | Acknowledge ticket | yes | - |
-| 49 | PATCH | `/ticketing/tenants/:tenantId/tickets/:ticketId/status` | Change ticket status | yes | - |
-| 50 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId/comments` | List comments | yes | - |
-| 51 | POST | `/ticketing/tenants/:tenantId/tickets/:ticketId/comments` | Add comment | yes | - |
-| 52 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId/activity` | Ticket activity history | yes | - |
-| 53 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId/story-points` | Get story-point estimate | yes | - |
-| 54 | PUT | `/ticketing/tenants/:tenantId/tickets/:ticketId/story-points` | Set story-point estimate | yes | - |
-| 55 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId/verifications` | List work verifications | yes | - |
-| 56 | POST | `/ticketing/tenants/:tenantId/tickets/:ticketId/verifications` | Verify work | yes | - |
-| 57 | POST | `/ticketing/tenants/:tenantId/tickets/:ticketId/verifications/:verificationId/revoke` | Revoke verification | yes | - |
-| 58 | GET | `/ticketing/tenants/:tenantId/work-summary/:userId` | Employee work summary | yes | - |
+| 3 | POST | `/auth/logout` | Log out | no | - |
+| 4 | POST | `/auth/signup/` | Sign up | no | - |
+| 5 | POST | `/auth/verify-email` | Verify email | no | - |
+| 6 | POST | `/auth/verify-email/resend` | Resend verification code | no | - |
+| 7 | POST | `/auth/login/` | Log in | no | - |
+| 8 | POST | `/auth/login/verify` | Complete sign-in (emailed code) | no | - |
+| 9 | GET | `/auth/me` | Current user | yes | - |
+| 10 | GET | `/onboarding` | Onboarding state | yes | - |
+| 11 | POST | `/auth/password/forgot` | Request password reset | no | - |
+| 12 | POST | `/auth/password/reset` | Reset password | no | - |
+| 13 | POST | `/auth/email-change/request` | Request email change | yes | - |
+| 14 | POST | `/auth/email-change/confirm` | Confirm email change | yes | - |
+| 15 | GET | `/tenants/` | List my tenants | yes | - |
+| 16 | POST | `/tenants/` | Create tenant | yes | `TENANTS_CREATE` |
+| 17 | GET | `/tenants/:tenant_id` | Get tenant | yes | - |
+| 18 | GET | `/tenants/:tenant_id/members` | List members | yes | - |
+| 19 | GET | `/tenants/:tenant_id/members/:user_id` | Get member | yes | - |
+| 20 | POST | `/tenants/:tenant_id/members` | Add member | yes | - |
+| 21 | PATCH | `/tenants/:tenant_id/members/:user_id` | Change member role | yes | - |
+| 22 | DELETE | `/tenants/:tenant_id/members/:user_id` | Remove member / leave tenant | yes | - |
+| 23 | GET | `/tenants/:tenant_id/invitations` | List invitations | yes | - |
+| 24 | POST | `/tenants/:tenant_id/invitations` | Invite a teammate | yes | - |
+| 25 | POST | `/tenants/:tenant_id/invitations/:invitation_id/resend` | Resend invitation | yes | - |
+| 26 | DELETE | `/tenants/:tenant_id/invitations/:invitation_id` | Revoke invitation | yes | - |
+| 27 | POST | `/tenants/:tenant_id/ownership-transfer/request` | Request ownership transfer | yes | - |
+| 28 | POST | `/tenants/:tenant_id/ownership-transfer/confirm` | Confirm ownership transfer | yes | - |
+| 29 | POST | `/invitations/preview` | Preview invitation (token) | no | - |
+| 30 | GET | `/invitations/mine` | My pending invitations | yes | - |
+| 31 | POST | `/invitations/accept` | Accept invitation (token) | yes | - |
+| 32 | POST | `/invitations/:invitation_id/accept` | Accept invitation (from my list) | yes | - |
+| 33 | GET | `/inventory/health/` | Inventory route check | no | - |
+| 34 | GET | `/inventory/tenants/:tenant_id/items` | List inventory items | yes | `INVENTORY_READ` |
+| 35 | POST | `/inventory/tenants/:tenant_id/items` | Create inventory item | yes | `INVENTORY_CREATE` |
+| 36 | PUT | `/inventory/tenants/:tenant_id/items/:id` | Update inventory item | yes | `INVENTORY_UPDATE` |
+| 37 | GET | `/audit/all` | Platform audit log (all tenants) | yes | `PLATFORM_AUDIT_READ` |
+| 38 | GET | `/audit/tenants/:tenant_id` | Tenant audit log | yes | `AUDIT_READ` |
+| 39 | GET | `/integrations/all/:tenant_id` | List tenant integrations | yes | `INTEGRATIONS_READ` |
+| 40 | POST | `/integrations/tenants/:tenant_id/apps` | Register integration | yes | `INTEGRATIONS_MANAGE` |
+| 41 | GET | `/integrations/:integration_id` | Get integration | yes | `INTEGRATIONS_READ` |
+| 42 | PUT | `/integrations/:integration_id/subscriptions` | Set event subscriptions | yes | `INTEGRATIONS_MANAGE` |
+| 43 | PUT | `/integrations/:integration_id/user-mappings` | Map external user | yes | `INTEGRATIONS_MANAGE` |
+| 44 | POST | `/integrations/:integration_id/activate` | Activate integration | yes | `INTEGRATIONS_MANAGE` |
+| 45 | POST | `/integrations/:integration_id/suspend` | Suspend integration | yes | `INTEGRATIONS_MANAGE` |
+| 46 | POST | `/integrations/:integration_id/disconnect` | Disconnect integration | yes | `INTEGRATIONS_MANAGE` |
+| 47 | POST | `/integrations/:integration_id/credentials/rotate` | Rotate credential | yes | `INTEGRATIONS_MANAGE` |
+| 48 | GET | `/integrations/tenants/:tenant_id/settings` | Get integration settings | yes | `INTEGRATIONS_READ` |
+| 49 | PUT | `/integrations/tenants/:tenant_id/settings/inventory-policy` | Set inventory shortage policy | yes | `INTEGRATIONS_MANAGE` |
+| 50 | POST | `/integrations/:integration_id/events` | Deliver integration event (app → Bean) | no | - |
+| 51 | GET | `/integrations/events` | Search integration events | yes | `INTEGRATIONS_READ` |
+| 52 | GET | `/integrations/events/:event_id` | Get event timeline | yes | `INTEGRATIONS_READ` |
+| 53 | POST | `/integrations/events/:event_id/retry` | Retry failed event | yes | `INTEGRATIONS_MANAGE` |
+| 54 | GET | `/integrations/diagnostics` | Search delivery diagnostics | yes | `INTEGRATIONS_READ` |
+| 55 | GET | `/integrations/diagnostics/unauthorized` | Unauthorized delivery attempts (platform) | yes | `PLATFORM_AUDIT_READ` |
+| 56 | GET | `/integrations/:integration_id/activity` | Integration activity feed | yes | `INTEGRATIONS_READ` |
+| 57 | GET | `/integrations/:integration_id/audit` | Integration audit history | yes | `INTEGRATIONS_READ` |
+| 58 | GET | `/integrations/:integration_id/analytics` | Integration analytics | yes | `INTEGRATIONS_READ` |
+| 59 | GET | `/ticketing/tenants/:tenantId/inboxes` | List inboxes | yes | - |
+| 60 | POST | `/ticketing/tenants/:tenantId/inboxes` | Create inbox | yes | - |
+| 61 | GET | `/ticketing/tenants/:tenantId/tickets` | List tickets | yes | - |
+| 62 | POST | `/ticketing/tenants/:tenantId/tickets` | Create ticket | yes | - |
+| 63 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId` | Get ticket | yes | - |
+| 64 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId/assignments` | List assignments | yes | - |
+| 65 | POST | `/ticketing/tenants/:tenantId/tickets/:ticketId/assignments` | Assign ticket | yes | - |
+| 66 | POST | `/ticketing/tenants/:tenantId/tickets/:ticketId/acknowledge` | Acknowledge ticket | yes | - |
+| 67 | PATCH | `/ticketing/tenants/:tenantId/tickets/:ticketId/status` | Change ticket status | yes | - |
+| 68 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId/comments` | List comments | yes | - |
+| 69 | POST | `/ticketing/tenants/:tenantId/tickets/:ticketId/comments` | Add comment | yes | - |
+| 70 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId/activity` | Ticket activity history | yes | - |
+| 71 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId/story-points` | Get story-point estimate | yes | - |
+| 72 | PUT | `/ticketing/tenants/:tenantId/tickets/:ticketId/story-points` | Set story-point estimate | yes | - |
+| 73 | GET | `/ticketing/tenants/:tenantId/tickets/:ticketId/verifications` | List work verifications | yes | - |
+| 74 | POST | `/ticketing/tenants/:tenantId/tickets/:ticketId/verifications` | Verify work | yes | - |
+| 75 | POST | `/ticketing/tenants/:tenantId/tickets/:ticketId/verifications/:verificationId/revoke` | Revoke verification | yes | - |
+| 76 | GET | `/ticketing/tenants/:tenantId/work-summary/:userId` | Employee work summary | yes | - |
 
 ## Health
 
@@ -179,254 +197,6 @@ No request body is required.
 
 ## Authentication
 
-### POST `/auth/signup/` — Sign up
-
-#### Purpose
-Registers a new account. Use it once per person; accounts are created without a role, so a fresh account has no account-level permissions until an operator assigns a role in the database.
-
-#### Authentication and permissions
-- Session: not required
-- Account permission: none
-- Tenant membership/role: not applicable
-- Public, but rate limited to 5 requests per hour per IP (every request counts, valid or not).
-
-#### Prerequisites
-- Collection variables `signupUsername`, `signupEmail` and `signupPassword` (the pre-request script fills the first two with unique values; set `signupPassword` in your environment — never commit it).
-
-#### Headers
-- `Cookie: bean.sid=...`: not used.
-- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
-- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
-- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
-
-#### Path and query parameters
-None.
-
-#### Request body
-| Field | Type | Required | Constraints |
-|---|---|---|---|
-| `username` | string | yes | 3-20 characters; letters and digits, optionally single spaces between words. Unique case-insensitively. |
-| `email` | string | yes | Valid email, max 254 characters. Trimmed and lower-cased. Unique case-insensitively. |
-| `password` | string | yes | 8-20 characters, no whitespace, at least one lower-case, upper-case, digit and symbol; at most 72 UTF-8 bytes. |
-
-Valid example:
-```json
-{
-  "username": "{{signupUsername}}",
-  "email": "{{signupEmail}}",
-  "password": "{{signupPassword}}"
-}
-```
-
-Invalid example (400: Username must be 3 to 20 alphanumeric characters.):
-```json
-{
-  "username": "ab",
-  "email": "not-an-email",
-  "password": "weak"
-}
-```
-
-#### Expected responses
-- **201 Created**: Account created.
-
-  ```json
-  {
-    "message": "User registered successfully.",
-    "responseData": {
-      "id": 12,
-      "username": "janedoe",
-      "email": "jane@example.com",
-      "createdAt": "2026-10-20T09:00:00.000Z"
-    }
-  }
-  ```
-- **400 Bad Request**: Validation failure; other messages: `A valid email address is required.`, `Password must be 8 to 20 characters, ...`, `A JSON object is required.`
-
-  ```json
-  {
-    "message": "Username must be 3 to 20 alphanumeric characters."
-  }
-  ```
-- **409 Conflict**: Email or username already registered (case-insensitive). Note: this response confirms an account exists, so signup does allow account enumeration; see the QA report.
-
-  ```json
-  {
-    "message": "An account with those details already exists."
-  }
-  ```
-- **429 Too Many Requests**: Signup rate limit exceeded (express-rate-limit default text body, not JSON).
-
-  ```json
-  Too many requests, please try again later.
-  ```
-
-#### Side effects
-- Inserts a `users` row (password stored as a bcrypt hash).
-- Writes a `SIGNUP` audit entry (actor = new user, no tenant, no email/password) in the same transaction.
-- Audit: `SIGNUP` (table `users`). Rolled back with the account if the audit write fails.
-
-#### Testing notes
-- Asserts status 201 plus response-field checks.
-- Changes persistent state: yes.
-- Safe to repeat: No: a second call with the same username/email returns 409. Clear `signupUsername`/`signupEmail` to generate new ones.
-
-### POST `/auth/login/` — Log in
-
-#### Purpose
-Authenticates with email and password and starts a server-side session. The response sets the `bean.sid` cookie (HttpOnly, 1 hour sliding, 6 hour absolute). Postman stores and replays it automatically.
-
-#### Authentication and permissions
-- Session: not required
-- Account permission: none
-- Tenant membership/role: not applicable
-- Public. Rate limited: 3 failed attempts per 15 minutes per IP (successful logins are not counted).
-
-#### Prerequisites
-- An existing account. Set environment variables `userEmail` and `userPassword` (never commit real values).
-
-#### Headers
-- `Cookie: bean.sid=...`: not used.
-- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
-- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
-- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
-
-#### Path and query parameters
-None.
-
-#### Request body
-| Field | Type | Required | Constraints |
-|---|---|---|---|
-| `email` | string | yes | Trimmed, lower-cased, max 254 characters. |
-| `password` | string | yes | Non-empty, at most 72 UTF-8 bytes. |
-
-Valid example:
-```json
-{
-  "email": "{{userEmail}}",
-  "password": "{{userPassword}}"
-}
-```
-
-Invalid example (400: Email and password are required.):
-```json
-{
-  "email": "jane@example.com"
-}
-```
-
-#### Expected responses
-- **200 OK**: Logged in; `Set-Cookie: bean.sid=...`. The session id is regenerated on login (session-fixation protection).
-
-  ```json
-  {
-    "message": "Login successful.",
-    "user": {
-      "id": 12,
-      "email": "jane@example.com",
-      "username": "janedoe",
-      "roleId": 3
-    }
-  }
-  ```
-- **400 Bad Request**: Missing or oversized credentials.
-
-  ```json
-  {
-    "message": "Email and password are required."
-  }
-  ```
-- **401 Unauthorized**: Unknown, disabled, deleted or wrong-password account. Identical for every cause.
-
-  ```json
-  {
-    "message": "Invalid email or password."
-  }
-  ```
-- **429 Too Many Requests**: Failed-login rate limit.
-
-  ```json
-  {
-    "message": "Too many login attempts from this IP, please try again after 15 minutes."
-  }
-  ```
-
-#### Side effects
-- Creates a session row in the PostgreSQL session store.
-- Success: `LOGIN_SUCCESS` audit entry. Wrong password for an existing account: `LOGIN_FAILURE` audit entry (no credentials stored).
-- Audit: `LOGIN_SUCCESS`, `LOGIN_FAILURE` (table `session`, account-level, no tenant).
-
-#### Testing notes
-- Asserts status 200 plus response-field checks.
-- Changes persistent state: yes.
-- Safe to repeat: Yes (each login starts a new session). Repeated failures trip the limiter.
-
-### GET `/auth/me` — Current user
-
-#### Purpose
-Returns the signed-in account and its account-level permissions (from its role). Use it to restore UI state after a reload or to confirm the session is still valid.
-
-#### Authentication and permissions
-- Session: required (`bean.sid` cookie from **Log in**)
-- Account permission: none
-- Tenant membership/role: not applicable
-- Any signed-in, enabled account.
-
-#### Prerequisites
-- Run **Log in** first (the `bean.sid` cookie must be in the Postman cookie jar).
-
-#### Headers
-- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
-- No additional headers.
-- CSRF: safe method, no `Origin` check.
-
-#### Path and query parameters
-None.
-
-#### Request body
-No request body is required.
-
-#### Expected responses
-- **200 OK**: Session valid. `Cache-Control: no-store`.
-
-  ```json
-  {
-    "user": {
-      "id": 12,
-      "email": "jane@example.com",
-      "username": "janedoe",
-      "roleId": 3,
-      "permissions": [
-        "INVENTORY_READ",
-        "TENANTS_CREATE"
-      ]
-    }
-  }
-  ```
-- **401 Unauthorized**: No valid session.
-
-  ```json
-  {
-    "message": "Unauthorized. Please authenticate."
-  }
-  ```
-- **401 Unauthorized**: Session older than 6 hours (absolute lifetime).
-
-  ```json
-  {
-    "message": "Session expired. Please log in again."
-  }
-  ```
-
-#### Side effects
-- None (rolling session expiry is refreshed by the cookie middleware).
-- Audit: None (read-only).
-
-#### Testing notes
-- Asserts status 200 plus response-field checks.
-- Changes persistent state: no.
-- Safe to repeat: Yes.
-
 ### POST `/auth/logout` — Log out
 
 #### Purpose
@@ -464,6 +234,923 @@ No request body is required.
 - Asserts status 204 plus response-field checks.
 - Changes persistent state: yes.
 - Safe to repeat: Yes (idempotent; later calls just return 204).
+
+### POST `/auth/signup/` — Sign up
+
+#### Purpose
+Registers an account in the unverified state and emails a 6-digit verification code. No session is created and the account cannot sign in until the address is verified (**Verify email**). The answer is the same whether or not the address is already registered.
+
+#### Authentication and permissions
+- Session: not required
+- Account permission: none
+- Tenant membership/role: not applicable
+- Public. Rate limited to 5 requests per hour per IP.
+
+#### Prerequisites
+- Collection variables `signupFullName`, `signupUsername`, `signupEmail`, `signupPassword` (the pre-request script fills the username/email; set `signupPassword` in your environment, never in the collection).
+
+#### Headers
+- `Cookie: bean.sid=...`: not used.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `fullName` | string | yes | 2-100 characters: letters (any script), single spaces, hyphens, apostrophes, periods. |
+| `username` | string | yes | 3-20 letters/digits, single spaces between words. Unique case-insensitively. |
+| `email` | string | yes | Valid email, max 254 characters; trimmed and lower-cased; unique case-insensitively. |
+| `password` | string | yes | 8-20 characters, no whitespace, lower + upper + digit + symbol, at most 72 UTF-8 bytes. |
+
+Valid example:
+```json
+{
+  "fullName": "{{signupFullName}}",
+  "username": "{{signupUsername}}",
+  "email": "{{signupEmail}}",
+  "password": "{{signupPassword}}"
+}
+```
+
+Invalid example (400: Validation message names the first failing rule.):
+```json
+{
+  "fullName": "X",
+  "username": "ab",
+  "email": "nope",
+  "password": "weak"
+}
+```
+
+#### Expected responses
+- **202 Accepted**: Always for a valid request (new address, existing unverified address, or an address that already has an account).
+
+  ```json
+  {
+    "status": "verification_sent",
+    "codeLength": 6,
+    "retryAfterSeconds": 60,
+    "message": "If the details are valid, a verification code has been sent to the email address. Enter it to activate the account."
+  }
+  ```
+- **400 Bad Request**: Validation failure (`Enter your full name ...`, `A valid email address is required.`, password rules, ...).
+
+  ```json
+  {
+    "message": "Username must be 3 to 20 alphanumeric characters."
+  }
+  ```
+- **409 Conflict**: Only username conflicts are explicit; email conflicts are not revealed.
+
+  ```json
+  {
+    "error": {
+      "code": "USERNAME_TAKEN",
+      "message": "That username is already taken. Choose another.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **429 Too Many Requests**: Signup rate limit (default text body).
+
+  ```json
+  Too many requests, please try again later.
+  ```
+
+#### Side effects
+- Inserts an unverified `users` row (bcrypt hash), a hashed `verify_email` challenge and a `SIGNUP` audit row in one transaction; then sends the code by email.
+- A second registration for an unverified address never replaces the stored password; for a verified address an "account exists" notice is emailed (at most one per 10 minutes).
+- Audit: `SIGNUP` (table `users`, transactional; no email or credentials in the entry).
+
+#### Testing notes
+- Asserts status 202 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: Yes: repeats give the same 202 and at most one code per 60 seconds.
+
+### POST `/auth/verify-email` — Verify email
+
+#### Purpose
+Submits the 6-digit code from the verification email. On success the account becomes active and receives the `standard` account role (which allows creating an organization). The caller must still sign in.
+
+#### Authentication and permissions
+- Session: not required
+- Account permission: none
+- Tenant membership/role: not applicable
+- Public. Rate limited to 20 requests per 15 minutes per IP; each code also allows 5 wrong attempts.
+
+#### Prerequisites
+- **Sign up** first; set `verificationCode` to the code from the email (in development with `MAIL_TRANSPORT=outbox` read it from `.mail-outbox/`).
+
+#### Headers
+- `Cookie: bean.sid=...`: not used.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `email` | string | yes | The registered address. |
+| `code` | string | yes | Exactly 6 digits. |
+
+Valid example:
+```json
+{
+  "email": "{{signupEmail}}",
+  "code": "{{verificationCode}}"
+}
+```
+
+Invalid example (400: `OTP_INVALID` (the counter of wrong attempts increases).):
+```json
+{
+  "email": "{{signupEmail}}",
+  "code": "000000"
+}
+```
+
+#### Expected responses
+- **200 OK**: Verified.
+
+  ```json
+  {
+    "status": "verified",
+    "message": "Email verified. You can sign in now."
+  }
+  ```
+- **400 Bad Request**: Wrong code. Also `OTP_EXPIRED`, `OTP_LOCKED` (5 wrong attempts: request a new code) and `OTP_ALREADY_USED` (sign-in challenge already completed).
+
+  ```json
+  {
+    "error": {
+      "code": "OTP_INVALID",
+      "message": "That code is not correct.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **429 Too Many Requests**: Per-IP rate limit.
+
+  ```json
+  {
+    "error": {
+      "code": "RATE_LIMITED",
+      "message": "Too many attempts. Try again later."
+    }
+  }
+  ```
+
+#### Side effects
+- Sets `email_verified_at`, assigns the `standard` role if the user had none, consumes the challenge, audits.
+- Audit: `SIGNUP_VERIFIED`; failures: `EMAIL_VERIFY_FAILED` (reason only, never the code).
+
+#### Testing notes
+- Asserts status 200 or 400 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: No: a used code cannot be replayed.
+
+### POST `/auth/verify-email/resend` — Resend verification code
+
+#### Purpose
+Sends a fresh verification code (superseding the previous one). Always answers 202 so it cannot be used to discover which addresses are registered.
+
+#### Authentication and permissions
+- Session: not required
+- Account permission: none
+- Tenant membership/role: not applicable
+- Public. 10 requests per hour per IP; a 60-second cooldown and 5 codes per hour per account apply silently.
+
+#### Prerequisites
+- None.
+
+#### Headers
+- `Cookie: bean.sid=...`: not used.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `email` | string | yes | Address to resend to. |
+
+Valid example:
+```json
+{
+  "email": "{{signupEmail}}"
+}
+```
+
+#### Expected responses
+- **202 Accepted**: Always.
+
+  ```json
+  {
+    "status": "verification_sent",
+    "codeLength": 6,
+    "retryAfterSeconds": 60,
+    "message": "If that address has an unverified account, a new code has been sent."
+  }
+  ```
+- **429 Too Many Requests**: Per-IP rate limit.
+
+  ```json
+  {
+    "error": {
+      "code": "RATE_LIMITED",
+      "message": "Too many attempts. Try again later."
+    }
+  }
+  ```
+
+#### Side effects
+- Supersedes the live challenge and emails a new one (only for an existing unverified account outside the cooldown).
+- Audit: None.
+
+#### Testing notes
+- Asserts status 202 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: Yes (cooldown applies).
+
+### POST `/auth/login/` — Log in
+
+#### Purpose
+Authenticates with email and password. Success starts a session (HttpOnly `bean.sid`, regenerated on login). Unverified accounts are refused. A browser that is not a trusted device for the account must first pass an emailed code: the response is 202 and **no session exists** until **Complete sign-in** succeeds.
+
+#### Authentication and permissions
+- Session: not required
+- Account permission: none
+- Tenant membership/role: not applicable
+- Public. Rate limited: 3 failed attempts per 15 minutes per IP and 10 per account.
+
+#### Prerequisites
+- A verified account. Set `userEmail` and `userPassword` in your environment (never commit them).
+
+#### Headers
+- `Cookie: bean.sid=...`: not used.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `email` | string | yes | Trimmed, lower-cased, max 254 characters. |
+| `password` | string | yes | Non-empty, at most 72 UTF-8 bytes. |
+
+Valid example:
+```json
+{
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}"
+}
+```
+
+Invalid example (400: Email and password are required.):
+```json
+{
+  "email": "jane@example.com"
+}
+```
+
+#### Expected responses
+- **200 OK**: Signed in; sets `bean.sid`. The first successful sign-in of an account also sets the `bean.dev.<userId>` trusted-device cookie (one per account).
+
+  ```json
+  {
+    "message": "Login successful.",
+    "user": {
+      "id": 12,
+      "email": "jane@example.com",
+      "username": "janedoe",
+      "fullName": "Jane Doe",
+      "roleId": 3
+    }
+  }
+  ```
+- **202 Accepted**: Step-up required (device not yet trusted). No session cookie is set.
+
+  ```json
+  {
+    "challenge": "email_otp",
+    "challengeId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10",
+    "codeLength": 6,
+    "retryAfterSeconds": 60,
+    "expiresInMinutes": 10,
+    "message": "Enter the code we emailed you to finish signing in."
+  }
+  ```
+- **400 Bad Request**: Missing or oversized credentials.
+
+  ```json
+  {
+    "message": "Email and password are required."
+  }
+  ```
+- **401 Unauthorized**: Unknown, disabled or wrong-password account (identical for all).
+
+  ```json
+  {
+    "message": "Invalid email or password."
+  }
+  ```
+- **403 Forbidden**: Correct password but the address is unverified.
+
+  ```json
+  {
+    "error": {
+      "code": "EMAIL_NOT_VERIFIED",
+      "message": "Verify your email address to sign in.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **429 Too Many Requests**: Step-up code requested twice within 60 seconds (has `Retry-After`). Also the rate-limit 429s.
+
+  ```json
+  {
+    "error": {
+      "code": "OTP_RATE_LIMITED",
+      "message": "A code was just sent. Wait a moment before requesting another.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+
+#### Side effects
+- Creates a session (200) or a hashed `login_step_up` challenge plus an emailed code (202).
+- Audits success, failure for existing accounts, and step-up requests.
+- Audit: `LOGIN_SUCCESS`, `LOGIN_FAILURE`, `LOGIN_STEP_UP_REQUIRED` (table `session`, account level).
+
+#### Testing notes
+- Asserts status 200 or 202 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: Yes (failures count toward the limiter).
+- The expected status is 200 or 202 depending on whether this Postman client already holds a trusted-device cookie.
+
+### POST `/auth/login/verify` — Complete sign-in (emailed code)
+
+#### Purpose
+Finishes a step-up sign-in with the code from the email. On success the session is created (ID regenerated) and this browser becomes a trusted device.
+
+#### Authentication and permissions
+- Session: not required
+- Account permission: none
+- Tenant membership/role: not applicable
+- Public. 20 requests per 15 minutes per IP; 5 wrong attempts per code.
+
+#### Prerequisites
+- A 202 from **Log in** (`loginChallengeId`) and the emailed code in `loginCode`.
+
+#### Headers
+- `Cookie: bean.sid=...`: not used.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `challengeId` | string (UUID) | yes | The `challengeId` from the 202 login response. |
+| `code` | string | yes | 6 digits. |
+
+Valid example:
+```json
+{
+  "challengeId": "{{loginChallengeId}}",
+  "code": "{{loginCode}}"
+}
+```
+
+Invalid example (400: `OTP_INVALID`.):
+```json
+{
+  "challengeId": "x",
+  "code": "1"
+}
+```
+
+#### Expected responses
+- **200 OK**: Signed in; sets `bean.sid` and `bean.dev.<userId>`.
+
+  ```json
+  {
+    "message": "Login successful.",
+    "user": {
+      "id": 12,
+      "email": "jane@example.com",
+      "username": "janedoe",
+      "fullName": "Jane Doe",
+      "roleId": 3
+    }
+  }
+  ```
+- **400 Bad Request**: Wrong code. Also `OTP_EXPIRED`, `OTP_LOCKED` (5 wrong attempts: request a new code) and `OTP_ALREADY_USED` (sign-in challenge already completed).
+
+  ```json
+  {
+    "error": {
+      "code": "OTP_INVALID",
+      "message": "That code is not correct.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **429 Too Many Requests**: Per-IP rate limit.
+
+  ```json
+  {
+    "error": {
+      "code": "RATE_LIMITED",
+      "message": "Too many attempts. Try again later."
+    }
+  }
+  ```
+
+#### Side effects
+- Consumes the challenge, regenerates the session, registers the trusted device.
+- Audit: `LOGIN_SUCCESS` (with `stepUp: email_otp`); failures `LOGIN_STEP_UP_FAILED`.
+
+#### Testing notes
+- Asserts status 200 or 400 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: No: codes are single use.
+
+### GET `/auth/me` — Current user
+
+#### Purpose
+Returns the signed-in, verified account and its account-level permissions. Use it to restore UI state after a reload.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: not applicable
+- Any signed-in, enabled, email-verified account.
+
+#### Prerequisites
+- Run **Log in** first.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- No additional headers.
+- CSRF: safe method, no `Origin` check.
+
+#### Path and query parameters
+None.
+
+#### Request body
+No request body is required.
+
+#### Expected responses
+- **200 OK**: `Cache-Control: no-store`.
+
+  ```json
+  {
+    "user": {
+      "id": 12,
+      "email": "jane@example.com",
+      "username": "janedoe",
+      "fullName": "Jane Doe",
+      "roleId": 3,
+      "emailVerified": true,
+      "permissions": [
+        "TENANTS_CREATE"
+      ]
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **401 Unauthorized**: Session older than 6 hours (absolute lifetime).
+
+  ```json
+  {
+    "message": "Session expired. Please log in again."
+  }
+  ```
+
+#### Side effects
+- None.
+- Audit: None (read-only).
+
+#### Testing notes
+- Asserts status 200 plus response-field checks.
+- Changes persistent state: no.
+- Safe to repeat: Yes.
+
+### GET `/onboarding` — Onboarding state
+
+#### Purpose
+Where the user is in the guided flow, derived from real records (nothing is stored, so it is resumable from any device): `organization` = no organization yet (create one or accept an invitation); `done` = belongs to at least one organization.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: not applicable
+
+#### Prerequisites
+- Run **Log in** first.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- No additional headers.
+- CSRF: safe method, no `Origin` check.
+
+#### Path and query parameters
+None.
+
+#### Request body
+No request body is required.
+
+#### Expected responses
+- **200 OK**: `Cache-Control: no-store`.
+
+  ```json
+  {
+    "data": {
+      "step": "organization",
+      "organizations": 0,
+      "pendingInvitations": 1,
+      "canCreateOrganization": true
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+
+#### Side effects
+- None.
+- Audit: None (read-only).
+
+#### Testing notes
+- Asserts status 200 plus response-field checks.
+- Changes persistent state: no.
+- Safe to repeat: Yes.
+
+### POST `/auth/password/forgot` — Request password reset
+
+#### Purpose
+Emails a single-use reset link (token in the URL fragment, valid 60 minutes). Always answers 202 so it cannot reveal which addresses have accounts.
+
+#### Authentication and permissions
+- Session: not required
+- Account permission: none
+- Tenant membership/role: not applicable
+- Public. 10 requests per hour per IP; a 60-second cooldown and 5 links per hour per account apply silently.
+
+#### Prerequisites
+- None.
+
+#### Headers
+- `Cookie: bean.sid=...`: not used.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `email` | string | yes | Account address. |
+
+Valid example:
+```json
+{
+  "email": "{{userEmail}}"
+}
+```
+
+#### Expected responses
+- **202 Accepted**: Always.
+
+  ```json
+  {
+    "status": "reset_requested",
+    "retryAfterSeconds": 60,
+    "message": "If that address has an account, a reset link has been sent."
+  }
+  ```
+- **429 Too Many Requests**: Per-IP rate limit.
+
+  ```json
+  {
+    "error": {
+      "code": "RATE_LIMITED",
+      "message": "Too many attempts. Try again later."
+    }
+  }
+  ```
+
+#### Side effects
+- Supersedes any live reset token and stores only its hash; emails the link.
+- Audit: `PASSWORD_RESET_REQUESTED`.
+
+#### Testing notes
+- Asserts status 202 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: Yes (throttled).
+
+### POST `/auth/password/reset` — Reset password
+
+#### Purpose
+Sets a new password using the emailed token. The token works once, expires after 60 minutes, ends every session of the account, forgets trusted devices, verifies the address if still unverified, and notifies the owner by email.
+
+#### Authentication and permissions
+- Session: not required
+- Account permission: none
+- Tenant membership/role: not applicable
+- Public. 10 requests per 15 minutes per IP.
+
+#### Prerequisites
+- `resetToken` from the `#token=` fragment of the emailed link.
+
+#### Headers
+- `Cookie: bean.sid=...`: not used.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `token` | string | yes | From the link. |
+| `newPassword` | string | yes | Same rules as signup. |
+
+Valid example:
+```json
+{
+  "token": "{{resetToken}}",
+  "newPassword": "{{newPassword}}"
+}
+```
+
+Invalid example (400: `INVALID_PASSWORD`.):
+```json
+{
+  "token": "x",
+  "newPassword": "weak"
+}
+```
+
+#### Expected responses
+- **200 OK**: Changed.
+
+  ```json
+  {
+    "status": "password_reset",
+    "message": "Your password was changed. Sign in with the new password."
+  }
+  ```
+- **400 Bad Request**: Unknown, used or expired token. Weak passwords give `INVALID_PASSWORD`.
+
+  ```json
+  {
+    "error": {
+      "code": "RESET_TOKEN_INVALID",
+      "message": "This reset link is invalid or has expired. Request a new one.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **429 Too Many Requests**: Per-IP rate limit.
+
+  ```json
+  {
+    "error": {
+      "code": "RATE_LIMITED",
+      "message": "Too many attempts. Try again later."
+    }
+  }
+  ```
+
+#### Side effects
+- Updates `password_hash` / `password_changed_at`, deletes all the user's sessions and trusted devices, consumes the token.
+- Audit: `PASSWORD_RESET_COMPLETED` (number of sessions revoked).
+
+#### Testing notes
+- Asserts status 200 or 400 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: No: single use.
+
+### POST `/auth/email-change/request` — Request email change
+
+#### Purpose
+Starts changing the sign-in email: proves the current password, emails a code to the NEW address and a notice to the old one. Nothing changes until the code is confirmed. The answer is the same if the new address is already registered.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: not applicable
+- 10 requests per hour per user.
+
+#### Prerequisites
+- Signed in; `newEmail` variable.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `newEmail` | string | yes | Valid email, max 254. |
+| `currentPassword` | string | yes | The account password. |
+
+Valid example:
+```json
+{
+  "newEmail": "{{newEmail}}",
+  "currentPassword": "{{userPassword}}"
+}
+```
+
+Invalid example (400: `INVALID_REQUEST`.):
+```json
+{
+  "newEmail": "x"
+}
+```
+
+#### Expected responses
+- **202 Accepted**: Code sent if the address can be used.
+
+  ```json
+  {
+    "status": "code_sent",
+    "codeLength": 6,
+    "retryAfterSeconds": 60,
+    "message": "If the address can be used, a confirmation code has been sent to it."
+  }
+  ```
+- **400 Bad Request**: Validation.
+
+  ```json
+  {
+    "error": {
+      "code": "INVALID_REQUEST",
+      "message": "Enter a valid new email address and your current password.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **403 Forbidden**: Wrong password (audited).
+
+  ```json
+  {
+    "error": {
+      "code": "INVALID_PASSWORD",
+      "message": "Your current password is not correct.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **429 Too Many Requests**: Cooldown (has `Retry-After`).
+
+  ```json
+  {
+    "error": {
+      "code": "OTP_RATE_LIMITED",
+      "message": "A code was just sent. Wait a moment before requesting another.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+
+#### Side effects
+- Supersedes a previous email-change challenge; emails the code to the new address and a notice to the current one.
+- Audit: `EMAIL_CHANGE_REQUESTED`, `EMAIL_CHANGE_DENIED`.
+
+#### Testing notes
+- Asserts status 202 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: Yes (cooldown).
+
+### POST `/auth/email-change/confirm` — Confirm email change
+
+#### Purpose
+Completes the change with the code sent to the new address. Updates the email, ends the user's OTHER sessions (this one stays), and notifies the old address.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: not applicable
+- 20 requests per 15 minutes per IP; 5 wrong attempts per code.
+
+#### Prerequisites
+- `emailChangeCode` from the new address.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `code` | string | yes | 6 digits. |
+
+Valid example:
+```json
+{
+  "code": "{{emailChangeCode}}"
+}
+```
+
+#### Expected responses
+- **200 OK**: Changed.
+
+  ```json
+  {
+    "status": "email_changed",
+    "message": "Your email address was changed.",
+    "email": "new@example.com"
+  }
+  ```
+- **400 Bad Request**: Wrong code. Also `OTP_EXPIRED`, `OTP_LOCKED` (5 wrong attempts: request a new code) and `OTP_ALREADY_USED` (sign-in challenge already completed).
+
+  ```json
+  {
+    "error": {
+      "code": "OTP_INVALID",
+      "message": "That code is not correct.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **409 Conflict**: Registered by someone else meanwhile.
+
+  ```json
+  {
+    "error": {
+      "code": "EMAIL_UNAVAILABLE",
+      "message": "That email address can no longer be used. Start again with another address.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+
+#### Side effects
+- Updates `users.email`, revokes other sessions, consumes the challenge.
+- Audit: `EMAIL_CHANGE_CONFIRMED`.
+
+#### Testing notes
+- Asserts status 200 or 400 or 409 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: No: single use.
 
 ## Tenants
 
@@ -545,6 +1232,7 @@ Creates an organization and makes the caller its `owner` in one transaction.
 - `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
 - `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
 - `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- `Idempotency-Key: {{$guid}}`: Optional but recommended: 8-100 characters of `A-Za-z0-9_.:-`. A retry with the same key and body replays the first response instead of creating a second organization; the same key with a different body returns 422 `IDEMPOTENCY_KEY_REUSED`.
 - CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
 
 #### Path and query parameters
@@ -627,6 +1315,16 @@ Invalid example (400: Unknown keys and invalid slugs are rejected with `INVALID_
     "error": {
       "code": "RATE_LIMITED",
       "message": "Too many tenant creation requests."
+    }
+  }
+  ```
+- **422 Unprocessable Entity**: Same key, different body.
+
+  ```json
+  {
+    "error": {
+      "code": "IDEMPOTENCY_KEY_REUSED",
+      "message": "That Idempotency-Key was already used with different details."
     }
   }
   ```
@@ -1232,6 +1930,1009 @@ No request body is required.
 - Asserts status 200 plus response-field checks.
 - Changes persistent state: yes.
 - Safe to repeat: No: the second call returns 404 `MEMBER_NOT_FOUND`.
+
+### GET `/tenants/:tenant_id/invitations` — List invitations
+
+#### Purpose
+Lists the organization's invitations, newest first (paginated). `expired` is derived from the expiry time.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: owner or admin
+- Re-checked inside the transaction under a tenant lock.
+
+#### Prerequisites
+- `tenantId`.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- No additional headers.
+- CSRF: safe method, no `Origin` check.
+
+#### Path and query parameters
+| Name | In | Type | Description | Example |
+|---|---|---|---|---|
+| `tenant_id` | path | positive integer | Tenant ID. Only selects the tenant; authority comes from the caller's `tenant_members` role. | `{{tenantId}}` |
+| `status` | query | enum | `pending` (default), `expired`, `accepted`, `revoked` or `all`. | `pending` |
+| `page` | query | integer | 1-based page number. Mutually exclusive with `offset`. | `1` |
+| `limit` | query | integer | Page size, 1 to 20 (default 20 once any paging parameter is sent). | `20` |
+| `offset` | query | integer | Zero-based row offset. Mutually exclusive with `page`. | `0` |
+
+#### Request body
+No request body is required.
+
+#### Expected responses
+- **200 OK**: Page of invitations.
+
+  ```json
+  {
+    "message": "Invitations retrieved successfully.",
+    "data": [
+      {
+        "id": "5",
+        "email": "sam@example.com",
+        "role": "member",
+        "status": "pending",
+        "expiresAt": "2026-11-05T09:00:00.000Z",
+        "createdAt": "2026-10-29T09:00:00.000Z",
+        "invitedByUserId": "12"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "offset": 0,
+      "total": 1,
+      "totalPages": 1,
+      "hasMore": false
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **400 Bad Request**: Invalid pagination parameters.
+
+  ```json
+  {
+    "message": "The limit must be an integer between 1 and 20."
+  }
+  ```
+- **400 Bad Request**: Bad `status`.
+
+  ```json
+  {
+    "error": {
+      "code": "INVALID_FILTER",
+      "message": "Unknown status filter.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **403 Forbidden**: Plain member.
+
+  ```json
+  {
+    "error": {
+      "code": "TENANT_ROLE_REQUIRED",
+      "message": "This action requires one of these tenant roles: owner, admin."
+    }
+  }
+  ```
+- **404 Not Found**: Not a member.
+
+  ```json
+  {
+    "error": {
+      "code": "TENANT_NOT_FOUND",
+      "message": "Tenant not found."
+    }
+  }
+  ```
+
+#### Side effects
+- None.
+- Audit: None (read-only).
+
+#### Testing notes
+- Asserts status 200 plus response-field checks.
+- Changes persistent state: no.
+- Safe to repeat: Yes.
+
+### POST `/tenants/:tenant_id/invitations` — Invite a teammate
+
+#### Purpose
+Invites an email address to the organization. Only an account that has verified that exact address can accept. A new invitation replaces an older pending one for the same address. The email contains a link with a 256-bit token (stored only as a hash).
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: owner or admin; admins may invite only `member`; owners any role
+- Re-checked inside the transaction under a tenant lock.
+
+#### Prerequisites
+- `tenantId`; `invitationEmail` variable. Rate limited to 60 per hour per user.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+| Name | In | Type | Description | Example |
+|---|---|---|---|---|
+| `tenant_id` | path | positive integer | Tenant ID. Only selects the tenant; authority comes from the caller's `tenant_members` role. | `{{tenantId}}` |
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `email` | string | yes | Valid email; not your own; not already a member. |
+| `role` | string | no | `member` (default), `admin` or `owner` (owners only for admin/owner). |
+
+Valid example:
+```json
+{
+  "email": "{{invitationEmail}}",
+  "role": "member"
+}
+```
+
+Invalid example (400: `INVALID_INVITATION`.):
+```json
+{
+  "email": "x",
+  "role": "god"
+}
+```
+
+#### Expected responses
+- **201 Created**: Created and emailed (valid 7 days).
+
+  ```json
+  {
+    "message": "Invitation sent.",
+    "data": {
+      "id": "5",
+      "email": "sam@example.com",
+      "role": "member",
+      "status": "pending",
+      "expiresAt": "2026-11-05T09:00:00.000Z",
+      "createdAt": "2026-10-29T09:00:00.000Z",
+      "invitedByUserId": "12"
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **400 Bad Request**: Validation or self-invite.
+
+  ```json
+  {
+    "error": {
+      "code": "INVALID_INVITATION",
+      "message": "Provide a valid email address and an optional role (owner, admin, member).",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **403 Forbidden**: Also `TENANT_ROLE_REQUIRED`.
+
+  ```json
+  {
+    "error": {
+      "code": "OWNER_REQUIRED",
+      "message": "Only tenant owners can invite someone as an owner or administrator."
+    }
+  }
+  ```
+- **404 Not Found**: Not a member.
+
+  ```json
+  {
+    "error": {
+      "code": "TENANT_NOT_FOUND",
+      "message": "Tenant not found."
+    }
+  }
+  ```
+- **409 Conflict**: Also `INVITATION_LIMIT` (100 pending), `TENANT_INACTIVE`.
+
+  ```json
+  {
+    "error": {
+      "code": "ALREADY_MEMBER",
+      "message": "That person is already a member of this organization."
+    }
+  }
+  ```
+- **429 Too Many Requests**: Hourly cap.
+
+  ```json
+  {
+    "error": {
+      "code": "RATE_LIMITED",
+      "message": "Too many invitations sent. Try again later."
+    }
+  }
+  ```
+
+#### Side effects
+- Revokes a previous pending invitation for the address, inserts the new one, emails it (after commit).
+- Audit: `CREATE INVITATION` (tenant-scoped, masked email, no token).
+
+#### Testing notes
+- Asserts status 201 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: Yes: re-inviting replaces the pending invitation.
+
+### POST `/tenants/:tenant_id/invitations/:invitation_id/resend` — Resend invitation
+
+#### Purpose
+Issues a new token and a fresh 7-day expiry for a pending invitation and emails it; the previous link stops working.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: owner or admin
+- Re-checked inside the transaction under a tenant lock.
+
+#### Prerequisites
+- `invitationId` of a pending invitation.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+| Name | In | Type | Description | Example |
+|---|---|---|---|---|
+| `tenant_id` | path | positive integer | Tenant ID. Only selects the tenant; authority comes from the caller's `tenant_members` role. | `{{tenantId}}` |
+| `invitation_id` | path | positive integer | Invitation ID within the tenant. | `{{invitationId}}` |
+
+#### Request body
+No request body.
+
+#### Expected responses
+- **200 OK**: Resent.
+
+  ```json
+  {
+    "message": "Invitation resent.",
+    "data": {
+      "id": "5",
+      "email": "sam@example.com",
+      "role": "member",
+      "status": "pending",
+      "expiresAt": "2026-11-05T09:00:00.000Z",
+      "createdAt": "2026-10-29T09:00:00.000Z",
+      "invitedByUserId": "12"
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **403 Forbidden**: Admin touching an admin/owner invitation.
+
+  ```json
+  {
+    "error": {
+      "code": "OWNER_REQUIRED",
+      "message": "Only tenant owners can manage this invitation."
+    }
+  }
+  ```
+- **404 Not Found**: No such invitation in this tenant.
+
+  ```json
+  {
+    "error": {
+      "code": "INVITATION_NOT_FOUND",
+      "message": "Invitation not found.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **409 Conflict**: Already accepted/revoked/expired.
+
+  ```json
+  {
+    "error": {
+      "code": "INVITATION_NOT_PENDING",
+      "message": "Only pending invitations can be resent."
+    }
+  }
+  ```
+- **429 Too Many Requests**: 60-second cooldown.
+
+  ```json
+  {
+    "error": {
+      "code": "RESEND_COOLDOWN",
+      "message": "This invitation was just sent. Wait a moment before resending."
+    }
+  }
+  ```
+
+#### Side effects
+- Replaces the token hash and expiry; emails the new link.
+- Audit: `RESEND INVITATION`.
+
+#### Testing notes
+- Asserts status 200 or 409 or 429 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: Yes after the cooldown.
+
+### DELETE `/tenants/:tenant_id/invitations/:invitation_id` — Revoke invitation
+
+#### Purpose
+Cancels a pending invitation; its link stops working immediately.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: owner or admin
+- Re-checked inside the transaction under a tenant lock.
+
+#### Prerequisites
+- `invitationId` of a pending invitation.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+| Name | In | Type | Description | Example |
+|---|---|---|---|---|
+| `tenant_id` | path | positive integer | Tenant ID. Only selects the tenant; authority comes from the caller's `tenant_members` role. | `{{tenantId}}` |
+| `invitation_id` | path | positive integer | Invitation ID within the tenant. | `{{invitationId}}` |
+
+#### Request body
+No request body is required.
+
+#### Expected responses
+- **200 OK**: Revoked.
+
+  ```json
+  {
+    "message": "Invitation revoked.",
+    "data": {
+      "id": "5",
+      "status": "revoked"
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **403 Forbidden**: Admin touching an admin/owner invitation.
+
+  ```json
+  {
+    "error": {
+      "code": "OWNER_REQUIRED",
+      "message": "Only tenant owners can manage this invitation."
+    }
+  }
+  ```
+- **404 Not Found**: No such invitation in this tenant.
+
+  ```json
+  {
+    "error": {
+      "code": "INVITATION_NOT_FOUND",
+      "message": "Invitation not found.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **409 Conflict**: Not pending.
+
+  ```json
+  {
+    "error": {
+      "code": "INVITATION_NOT_PENDING",
+      "message": "Only pending invitations can be revoked."
+    }
+  }
+  ```
+
+#### Side effects
+- Sets status `revoked`.
+- Audit: `REVOKE INVITATION`.
+
+#### Testing notes
+- Asserts status 200 or 409 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: No: a second call returns 409.
+
+### POST `/tenants/:tenant_id/ownership-transfer/request` — Request ownership transfer
+
+#### Purpose
+First step of handing the organization to another member: emails the current owner a confirmation code (step-up). Nothing changes yet.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: owner
+- Tenant must be active.
+
+#### Prerequisites
+- `tenantId`; `newOwnerUserId` of an active member other than yourself.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+| Name | In | Type | Description | Example |
+|---|---|---|---|---|
+| `tenant_id` | path | positive integer | Tenant ID. Only selects the tenant; authority comes from the caller's `tenant_members` role. | `{{tenantId}}` |
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `newOwnerUserId` | ID | yes | An active member of this tenant; no other keys. |
+
+Valid example:
+```json
+{
+  "newOwnerUserId": "{{newOwnerUserId}}"
+}
+```
+
+Invalid example (400: `INVALID_TRANSFER`.):
+```json
+{}
+```
+
+#### Expected responses
+- **202 Accepted**: Code emailed to the owner.
+
+  ```json
+  {
+    "status": "code_sent",
+    "codeLength": 6,
+    "retryAfterSeconds": 60,
+    "message": "We emailed you a confirmation code. Enter it to complete the transfer."
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **400 Bad Request**: Validation or self-transfer.
+
+  ```json
+  {
+    "error": {
+      "code": "INVALID_TRANSFER",
+      "message": "Provide the user ID of an existing member as newOwnerUserId.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **403 Forbidden**: Not an owner.
+
+  ```json
+  {
+    "error": {
+      "code": "OWNER_REQUIRED",
+      "message": "Only tenant owners can transfer ownership."
+    }
+  }
+  ```
+- **404 Not Found**: Target not an active member.
+
+  ```json
+  {
+    "error": {
+      "code": "MEMBER_NOT_FOUND",
+      "message": "The new owner must be an active member of this organization.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **429 Too Many Requests**: Cooldown (has `Retry-After`).
+
+  ```json
+  {
+    "error": {
+      "code": "OTP_RATE_LIMITED",
+      "message": "A code was just sent. Wait a moment before requesting another.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+
+#### Side effects
+- Issues a hashed `sensitive_action` challenge bound to this tenant and target; emails the code.
+- Audit: `OWNERSHIP_TRANSFER_REQUESTED`.
+
+#### Testing notes
+- Asserts status 202 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: Yes (cooldown; supersedes the previous code).
+
+### POST `/tenants/:tenant_id/ownership-transfer/confirm` — Confirm ownership transfer
+
+#### Purpose
+Completes the transfer with the emailed code: in one transaction the new owner becomes `owner` and the caller becomes `admin`. A code issued for another tenant or action is rejected.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: owner
+- Re-checked under the tenant lock.
+
+#### Prerequisites
+- `transferCode` from the email.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+| Name | In | Type | Description | Example |
+|---|---|---|---|---|
+| `tenant_id` | path | positive integer | Tenant ID. Only selects the tenant; authority comes from the caller's `tenant_members` role. | `{{tenantId}}` |
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `code` | string | yes | 6 digits. |
+
+Valid example:
+```json
+{
+  "code": "{{transferCode}}"
+}
+```
+
+#### Expected responses
+- **200 OK**: Transferred.
+
+  ```json
+  {
+    "message": "Ownership transferred. You are now an administrator of this organization.",
+    "data": {
+      "tenantId": "4",
+      "newOwnerUserId": "15",
+      "yourRole": "admin"
+    }
+  }
+  ```
+- **400 Bad Request**: Wrong code. Also `OTP_EXPIRED`, `OTP_LOCKED` (5 wrong attempts: request a new code) and `OTP_ALREADY_USED` (sign-in challenge already completed).
+
+  ```json
+  {
+    "error": {
+      "code": "OTP_INVALID",
+      "message": "That code is not correct.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **403 Forbidden**: Not (or no longer) an owner.
+
+  ```json
+  {
+    "error": {
+      "code": "OWNER_REQUIRED",
+      "message": "Only tenant owners can transfer ownership."
+    }
+  }
+  ```
+- **409 Conflict**: Target left meanwhile.
+
+  ```json
+  {
+    "error": {
+      "code": "MEMBER_NOT_FOUND",
+      "message": "The new owner is no longer an active member of this organization.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+
+#### Side effects
+- Promotes the target, demotes the caller, consumes the code; exactly one owner remains.
+- Audit: `OWNERSHIP_TRANSFERRED` (tenant-scoped, old and new owner).
+
+#### Testing notes
+- Asserts status 200 or 400 or 403 or 409 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: No: single use, and the caller is no longer an owner afterwards.
+
+## Invitations
+
+### POST `/invitations/preview` — Preview invitation (token)
+
+#### Purpose
+Shows what an invitation token is for before the person signs in (organization, role, inviter, masked address, expiry). Public: the 256-bit token is the credential. Reveals nothing else.
+
+#### Authentication and permissions
+- Session: not required
+- Account permission: none
+- Tenant membership/role: not applicable
+- Public. 30 requests per 15 minutes per IP.
+
+#### Prerequisites
+- `invitationToken` from the `#token=` fragment of the emailed link.
+
+#### Headers
+- `Cookie: bean.sid=...`: not used.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `token` | string | yes | From the link (sent in the body, never in a URL). |
+
+Valid example:
+```json
+{
+  "token": "{{invitationToken}}"
+}
+```
+
+Invalid example (400: `INVALID_INVITATION`.):
+```json
+{
+  "token": "x"
+}
+```
+
+#### Expected responses
+- **200 OK**: Valid, pending, unexpired invitation to an active organization. `Cache-Control: no-store`.
+
+  ```json
+  {
+    "data": {
+      "organization": "Acme Coffee",
+      "role": "member",
+      "invitedBy": "Jane Doe",
+      "emailHint": "s***@example.com",
+      "expiresAt": "2026-11-05T09:00:00.000Z"
+    }
+  }
+  ```
+- **400 Bad Request**: Unknown, used, expired or revoked (indistinguishable).
+
+  ```json
+  {
+    "error": {
+      "code": "INVALID_INVITATION",
+      "message": "This invitation is invalid, expired, or was already used.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **429 Too Many Requests**: Per-IP rate limit.
+
+  ```json
+  {
+    "error": {
+      "code": "RATE_LIMITED",
+      "message": "Too many attempts. Try again later."
+    }
+  }
+  ```
+
+#### Side effects
+- None.
+- Audit: None (read-only).
+
+#### Testing notes
+- Asserts status 200 or 400 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: Yes.
+
+### GET `/invitations/mine` — My pending invitations
+
+#### Purpose
+Pending, unexpired invitations addressed to the signed-in user's verified email address (for the onboarding screen).
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: not applicable
+
+#### Prerequisites
+- Signed in.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- No additional headers.
+- CSRF: safe method, no `Origin` check.
+
+#### Path and query parameters
+None.
+
+#### Request body
+No request body is required.
+
+#### Expected responses
+- **200 OK**: Possibly empty.
+
+  ```json
+  {
+    "message": "Invitations retrieved successfully.",
+    "data": [
+      {
+        "id": "5",
+        "organization": "Acme Coffee",
+        "role": "member",
+        "invitedBy": "Jane Doe",
+        "expiresAt": "2026-11-05T09:00:00.000Z"
+      }
+    ]
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+
+#### Side effects
+- None.
+- Audit: None (read-only).
+
+#### Testing notes
+- Asserts status 200 plus response-field checks.
+- Changes persistent state: no.
+- Safe to repeat: Yes.
+
+### POST `/invitations/accept` — Accept invitation (token)
+
+#### Purpose
+Accepts an invitation using the token from the emailed link. The signed-in account must be verified and its email must equal the invited address. The membership is created and the token consumed in one transaction; concurrent attempts create one membership.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: not applicable
+- 20 requests per 15 minutes per user.
+
+#### Prerequisites
+- `invitationToken` from the `#token=` fragment of the link.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- `Content-Type: application/json`: Required; Postman sets it automatically for a raw JSON body.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+None.
+
+#### Request body
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `token` | string | yes | From the link (sent in the body, never in a URL). |
+
+Valid example:
+```json
+{
+  "token": "{{invitationToken}}"
+}
+```
+
+Invalid example (400: `INVALID_INVITATION`.):
+```json
+{
+  "token": "x"
+}
+```
+
+#### Expected responses
+- **200 OK**: Joined (or already a member, which closes the invitation).
+
+  ```json
+  {
+    "message": "Invitation accepted.",
+    "data": {
+      "tenantId": "4",
+      "name": "Acme Coffee",
+      "membershipRole": "member",
+      "alreadyMember": false
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **400 Bad Request**: Unknown, used, revoked or deleted-tenant invitation.
+
+  ```json
+  {
+    "error": {
+      "code": "INVALID_INVITATION",
+      "message": "This invitation is invalid, expired, or was already used.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **403 Forbidden**: Wrong account.
+
+  ```json
+  {
+    "error": {
+      "code": "INVITATION_EMAIL_MISMATCH",
+      "message": "This invitation was sent to a different email address. Sign in with that address to accept it.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **409 Conflict**: Inviter lost authority. Also `TENANT_INACTIVE`.
+
+  ```json
+  {
+    "error": {
+      "code": "INVITATION_NO_LONGER_VALID",
+      "message": "The person who invited you can no longer add members. Ask for a new invitation.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **410 **: Past the 7-day expiry.
+
+  ```json
+  {
+    "error": {
+      "code": "INVITATION_EXPIRED",
+      "message": "This invitation has expired. Ask for a new one.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+
+#### Side effects
+- Inserts `tenant_members`, marks the invitation accepted (after re-checking inviter authority and tenant status under a tenant lock).
+- Audit: `ADD TENANT MEMBER` (via invitation) and `ACCEPT INVITATION` (tenant-scoped).
+
+#### Testing notes
+- Asserts status 200 or 400 or 403 or 409 or 410 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: No: single use.
+
+### POST `/invitations/:invitation_id/accept` — Accept invitation (from my list)
+
+#### Purpose
+Accepts one of the invitations from **My pending invitations** without the email token. The same email-match, authority and transaction rules apply.
+
+#### Authentication and permissions
+- Session: required (`bean.sid` cookie from **Log in**)
+- Account permission: none
+- Tenant membership/role: not applicable
+- 20 requests per 15 minutes per user.
+
+#### Prerequisites
+- `invitationId` from **My pending invitations**.
+
+#### Headers
+- `Cookie: bean.sid=...`: required; Postman's cookie jar sends it automatically after login.
+- `Origin: {{origin}}`: Required on every non-GET request. Must equal one of the backend's `APP_ORIGINS` exactly (no trailing slash). Postman does not send `Origin` by itself.
+- CSRF: there is no CSRF token endpoint or header in this backend; protection is the `Origin` allow-list above plus `SameSite` session cookies.
+
+#### Path and query parameters
+| Name | In | Type | Description | Example |
+|---|---|---|---|---|
+| `invitation_id` | path | positive integer | Invitation ID within the tenant. | `{{invitationId}}` |
+
+#### Request body
+No request body.
+
+#### Expected responses
+- **200 OK**: Joined.
+
+  ```json
+  {
+    "message": "Invitation accepted.",
+    "data": {
+      "tenantId": "4",
+      "name": "Acme Coffee",
+      "membershipRole": "member",
+      "alreadyMember": false
+    }
+  }
+  ```
+- **401 Unauthorized**: No valid session.
+
+  ```json
+  {
+    "message": "Unauthorized. Please authenticate."
+  }
+  ```
+- **400 Bad Request**: Not addressed to this account, used or revoked (indistinguishable).
+
+  ```json
+  {
+    "error": {
+      "code": "INVALID_INVITATION",
+      "message": "This invitation is invalid, expired, or was already used.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **409 Conflict**: Also `TENANT_INACTIVE`.
+
+  ```json
+  {
+    "error": {
+      "code": "INVITATION_NO_LONGER_VALID",
+      "message": "The person who invited you can no longer add members. Ask for a new invitation.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+- **410 **: Expired.
+
+  ```json
+  {
+    "error": {
+      "code": "INVITATION_EXPIRED",
+      "message": "This invitation has expired. Ask for a new one.",
+      "requestId": "3f0c2c1e-5b8a-4f43-9a55-0c2e7c9d1a10"
+    }
+  }
+  ```
+
+#### Side effects
+- Same as **Accept invitation (token)**.
+- Audit: `ADD TENANT MEMBER`, `ACCEPT INVITATION`.
+
+#### Testing notes
+- Asserts status 200 or 400 or 409 or 410 plus response-field checks.
+- Changes persistent state: yes.
+- Safe to repeat: No: single use.
 
 ## Inventory
 

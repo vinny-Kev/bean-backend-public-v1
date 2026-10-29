@@ -31,6 +31,7 @@ export const err = {
     ticket: (status, message, note, code = { 400: 'VALIDATION_ERROR', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT' }[status]) => ({
         status, note, body: { error: { code, message, requestId: uuid } },
     }),
+    identity: (status, code, message, note) => ({ status, note, body: { error: { code, message, requestId: uuid } } }),
     badPaging: { status: 400, note: 'Invalid pagination parameters.', body: { message: 'The limit must be an integer between 1 and 20.' } },
 };
 

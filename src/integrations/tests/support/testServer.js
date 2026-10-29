@@ -10,6 +10,9 @@ import auditRoutes from '../../../audit_logs/routes/audit.routes.js';
 import inventoryRoutes from '../../../inventory/routes/inventory.routes.js';
 import integrationRoutes from '../../routes/integration.routes.js';
 import tenantRoutes from '../../../tenants/routes/tenant.routes.js';
+import ticketRoutes from '../../../ticketing/routes/ticket.routes.js';
+import onboardingRoutes from '../../../auth/routes/onboarding.routes.js';
+import invitationRoutes from '../../../invitations/routes/invitation.routes.js';
 
 // The first configured APP_ORIGINS entry; unsafe requests must carry it (CSRF origin check).
 export const trustedOrigin = [...config.allowedOrigins][0] ?? null;
@@ -44,6 +47,9 @@ export const startTestServer = async ({ realSessions = false } = {}) => {
     app.use('/inventory/', inventoryRoutes);
     app.use('/integrations/', integrationRoutes);
     app.use('/tenants/', tenantRoutes);
+    app.use('/invitations/', invitationRoutes);
+    app.use('/onboarding/', onboardingRoutes);
+    app.use('/ticketing/', ticketRoutes);
     app.use(notFoundHandler);
     app.use(errorHandler);
     const server = await new Promise((resolve) => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
@@ -52,10 +58,10 @@ export const startTestServer = async ({ realSessions = false } = {}) => {
     // A client keeps its own cookie jar (real sessions) and sends the trusted Origin on unsafe methods.
     const client = () => {
         const cookies = new Map();
-        return async (method, path, { user, body, origin = trustedOrigin } = {}) => {
+        return async (method, path, { user, body, origin = trustedOrigin, headers = {} } = {}) => {
             const response = await fetch(`${baseUrl}${path}`, {
                 method,
-                headers: { 'Content-Type': 'application/json',
+                headers: { 'Content-Type': 'application/json', ...headers,
                     ...(user && { 'x-test-user': String(user) }),
                     ...(origin && !['GET', 'HEAD'].includes(method) && { Origin: origin }),
                     ...(cookies.size && { Cookie: [...cookies].map(([k, v]) => `${k}=${v}`).join('; ') }) },

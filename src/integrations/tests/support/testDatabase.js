@@ -6,12 +6,18 @@ import { pool } from '../../../db/pool.js';
 
 const dbDirectory = fileURLToPath(new URL('../../../../db/', import.meta.url));
 
-// These tests drop and rebuild the public schema. Refuse anything except an
-// explicitly local database whose name ends in `_test`, so a stray .env
-// DATABASE_URL (for example the shared Neon database) is never touched.
+// These tests drop and rebuild the public schema. Refuse anything except a local
+// database or an explicitly requested hosted scratch database whose name ends in
+// `_test`, so the real database named by .env is never touched.
 export const testDatabaseSkipReason = (() => {
     const db = config.database;
-    if (db.connectionString) return 'DATABASE_URL is set; database tests only run against a local *_test database.';
+    if (db.connectionString) {
+        // A hosted scratch database is allowed only when explicitly requested (scripts/run-db-tests.mjs
+        // sets the flag) and its database name ends in _test, so the real database is never rebuilt.
+        if (process.env.BEAN_ALLOW_REMOTE_TEST_DB !== '1') return 'DATABASE_URL is set; run database tests through npm run test:db (scratch *_test database).';
+        if (!/_test$/.test(new URL(db.connectionString).pathname.slice(1))) return 'The database name must end in _test for database tests.';
+        return false;
+    }
     if (!['127.0.0.1', 'localhost', '::1'].includes(db.host)) return 'DB_HOST must be a local address for database tests.';
     if (!/_test$/.test(db.database)) return 'DB_NAME must end in _test for database tests.';
     return false;
@@ -58,8 +64,8 @@ export const seedFixtures = async () => {
             ON CONFLICT DO NOTHING;
         -- Users 1-4 are dev; user 4 belongs to no tenant; user 5 has no role at all;
         -- user 6 is staff and an admin of tenant 1 (a tenant role without account-level tenant creation).
-        INSERT INTO users (id, email, username, password_hash, role_id) OVERRIDING SYSTEM VALUE
-            SELECT u.id, u.email, u.username, 'x', r.id
+        INSERT INTO users (id, email, username, password_hash, role_id, email_verified_at) OVERRIDING SYSTEM VALUE
+            SELECT u.id, u.email, u.username, 'x', r.id, now()
             FROM (VALUES (1, 'owner@acme.test', 'acmeowner', 'dev'), (2, 'member@acme.test', 'acmemember', 'dev'),
                          (3, 'owner@globex.test', 'globexowner', 'dev'), (4, 'founder@new.test', 'founder', 'dev'),
                          (5, 'norole@new.test', 'norole', NULL), (6, 'admin@acme.test', 'acmeadmin', 'staff'))

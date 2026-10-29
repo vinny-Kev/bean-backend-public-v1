@@ -50,6 +50,7 @@ export const sessionAuthMiddleware = async (req, res, next) => {
             id: user.id,
             email: user.email,
             username: user.username,
+            fullName: user.fullName,
             roleId: user.roleId,
         };
     return next();
