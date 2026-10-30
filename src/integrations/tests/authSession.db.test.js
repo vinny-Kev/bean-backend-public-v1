@@ -16,7 +16,7 @@ const password = 'Str0ng!Pass';
 
 // Creates an account directly; signup itself is covered above and is rate limited to 5 per hour.
 const createAccount = async (username, email) => pool.query(
-    'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)', [username, email, await bcrypt.hash(password, 4)]);
+    `INSERT INTO users (username, email, password_hash, full_name, email_verified_at) VALUES ($1, $2, $3, 'Test Person', now())`, [username, email, await bcrypt.hash(password, 4)]);
 
 describe('registration, login, session, and logout with real sessions against PostgreSQL', { skip, concurrency: false }, () => {
     before(async () => {
@@ -32,20 +32,22 @@ describe('registration, login, session, and logout with real sessions against Po
         await pool.query('TRUNCATE session');
     });
 
-    test('signup hashes the password, normalizes email, and rejects duplicates and invalid input', async () => {
+    test('signup creates an unverified account without a session or role and rejects invalid input', async () => {
         const api = client();
-        const created = await api('POST', '/auth/signup', { body: { username: 'newuser', email: 'New.User@Example.test', password } });
-        assert.equal(created.status, 201);
-        assert.equal(created.body.responseData.email, 'new.user@example.test');
+        const created = await api('POST', '/auth/signup', { body: { fullName: 'New  User', username: 'newuser', email: 'New.User@Example.test', password } });
+        assert.equal(created.status, 202);
+        assert.deepEqual(Object.keys(created.body).sort(), ['codeLength', 'message', 'retryAfterSeconds', 'status']);
         assert.equal(JSON.stringify(created.body).includes('password'), false);
-        const stored = await one(`SELECT password_hash, role_id FROM users WHERE username='newuser'`);
-        assert.notEqual(stored.password_hash, password);
+        const stored = await one(`SELECT password_hash, role_id, email, full_name, email_verified_at FROM users WHERE username='newuser'`);
+        assert.equal(stored.email, 'new.user@example.test');
+        assert.equal(stored.full_name, 'New User');
+        assert.equal(stored.email_verified_at, null);
         assert.equal(await bcrypt.compare(password, stored.password_hash), true);
-        assert.equal(stored.role_id, null, 'new accounts get no role, so no account-level permissions');
+        assert.equal(stored.role_id, null, 'no role (and so no account permissions) until the email is verified');
+        assert.equal(created.headers.getSetCookie().some((h) => h.startsWith('bean.sid=')), false, 'signup never starts a session');
 
-        assert.equal((await api('POST', '/auth/signup', { body: { username: 'other', email: 'NEW.user@example.test', password } })).status, 409);
-        assert.equal((await api('POST', '/auth/signup', { body: { username: 'x', email: 'bad', password: 'weak' } })).status, 400);
-        assert.equal((await api('POST', '/auth/signup', { body: { username: 'nocsrf', email: 'n@example.test', password }, origin: null })).status, 403,
+        assert.equal((await api('POST', '/auth/signup', { body: { fullName: 'X', username: 'x', email: 'bad', password: 'weak' } })).status, 400);
+        assert.equal((await api('POST', '/auth/signup', { body: { fullName: 'No Csrf', username: 'nocsrf', email: 'n@example.test', password }, origin: null })).status, 403,
             'unsafe requests without a trusted Origin are rejected');
     });
 
@@ -53,10 +55,10 @@ describe('registration, login, session, and logout with real sessions against Po
         // Both requests have already passed validateSignupData's existence check, which is the race window.
         const signup = (username, email) => new Promise((resolve, reject) => {
             const res = { status(code) { this.code = code; return this; }, json(body) { resolve({ status: this.code, body }); } };
-            signupUserService({ body: { username, email, password } }, res, reject);
+            signupUserService({ body: { fullName: 'Race Runner', username, email, password }, requestId: 'test' }, res, reject);
         });
         const raced = await Promise.all([signup('RaceUser', 'race1@example.test'), signup('raceuser', 'race2@example.test')]);
-        assert.deepEqual(raced.map((r) => r.status).sort(), [201, 409]);
+        assert.deepEqual(raced.map((r) => r.status).sort(), [202, 409]);
         assert.equal(await count(`SELECT COUNT(*) FROM users WHERE LOWER(username)='raceuser'`), 1);
         assert.equal(JSON.stringify(raced).includes('users_'), false, 'constraint names are not exposed');
 
@@ -70,9 +72,9 @@ describe('registration, login, session, and logout with real sessions against Po
         const login = await api('POST', '/auth/login', { body: { email: 'SAFE@example.test', password } });
         assert.equal(login.status, 200);
         assert.deepEqual(Object.keys(login.body).sort(), ['message', 'user']);
-        assert.deepEqual(Object.keys(login.body.user).sort(), ['email', 'id', 'roleId', 'username']);
+        assert.deepEqual(Object.keys(login.body.user).sort(), ['email', 'fullName', 'id', 'roleId', 'username']);
         const me = await api('GET', '/auth/me');
-        assert.deepEqual(Object.keys(me.body.user).sort(), ['email', 'id', 'permissions', 'roleId', 'username']);
+        assert.deepEqual(Object.keys(me.body.user).sort(), ['email', 'emailVerified', 'fullName', 'id', 'permissions', 'roleId', 'username']);
         const sid = (await one('SELECT sid FROM session LIMIT 1')).sid;
         for (const body of [login.body, me.body]) {
             assert.equal(/password|hash|sid|session|cookie/i.test(JSON.stringify(body)), false);
@@ -82,7 +84,7 @@ describe('registration, login, session, and logout with real sessions against Po
 
     test('login creates an HttpOnly session, /auth/me reflects the account, and logout ends it', async () => {
         const api = client();
-        await api('POST', '/auth/signup', { body: { username: 'loginuser', email: 'login@example.test', password } });
+        await createAccount('loginuser', 'login@example.test');
         assert.equal((await api('GET', '/auth/me')).status, 401);
 
         const wrong = await api('POST', '/auth/login', { body: { email: 'login@example.test', password: 'Wrong!Pass1' } });

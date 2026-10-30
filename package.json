@@ -5,8 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test",
-    "test:db": "node --test --test-concurrency=1 \"src/integrations/tests/*.db.test.js\"",
-    "dev": "node --watch src/server.js"
+    "test:db": "node scripts/run-db-tests.mjs",
+    "dev": "node --watch src/server.js",
+    "docs:api": "node scripts/api-docs/build.mjs",
+    "check:api": "node scripts/api-docs/check-coverage.mjs",
+    "migrate:status": "node scripts/migrate.mjs status",
+    "migrate:apply": "node scripts/migrate.mjs apply",
+    "audit:deps": "npm audit --omit=dev"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +31,7 @@
     "express-rate-limit": "^8.7.0",
     "express-session": "^1.19.0",
     "helmet": "^8.3.0",
+    "nodemailer": "^10.3.0",
     "pg": "^8.23.1"
   }
 }

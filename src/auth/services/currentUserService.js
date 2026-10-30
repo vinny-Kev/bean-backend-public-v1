@@ -2,7 +2,8 @@ import { pool } from '../../db/pool.js';
 
 export const findCurrentUserById = async (userId) => {
     const result = await pool.query(
-        'SELECT id, username, email, role_id FROM users WHERE id = $1 AND is_disabled = false AND deleted_at IS NULL',
+        `SELECT id, username, email, full_name, role_id FROM users
+         WHERE id = $1 AND is_disabled = false AND deleted_at IS NULL AND email_verified_at IS NOT NULL`,
         [userId],
     );
 
@@ -13,6 +14,7 @@ export const findCurrentUserById = async (userId) => {
         id: user.id,
         username: user.username,
         email: user.email,
+        fullName: user.full_name,
         roleId: user.role_id,
     };
 };

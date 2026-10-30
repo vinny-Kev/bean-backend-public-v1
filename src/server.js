@@ -16,6 +16,9 @@ import tenantRoutes from './tenants/routes/tenant.routes.js';
 import { startIntegrationEventWorker } from './integrations/services/integrationEventWorker.js';
 import { startIntegrationRetentionWorker } from './integrations/services/integrationRetentionService.js';
 import ticketRoutes from './ticketing/routes/ticket.routes.js';
+import healthRoutes from './health/routes/health.routes.js';
+import onboardingRoutes from './auth/routes/onboarding.routes.js';
+import invitationRoutes from './invitations/routes/invitation.routes.js';
 const app = express();
 const PostgresSessionStore = connectPgSimple(session);
 const sessionStore = new PostgresSessionStore({ pool, createTableIfMissing: true });
@@ -23,6 +26,8 @@ const sessionStore = new PostgresSessionStore({ pool, createTableIfMissing: true
 app.disable('x-powered-by');
 app.use(requestContext);
 app.use(helmet());
+// Public probes: before CORS, sessions and the origin check.
+app.use('/health', healthRoutes);
 app.use(cors({
     // Integration events are server-to-server; integration app URLs must not
     // become credentialed CORS origins for session-authenticated routes.
@@ -70,6 +75,8 @@ app.use('/inventory/', inventoryRoutes);
 app.use('/audit/', auditRoutes);
 app.use('/integrations/', integrationRoutes);
 app.use('/tenants/', tenantRoutes);
+app.use('/invitations/', invitationRoutes);
+app.use('/onboarding/', onboardingRoutes);
 app.use('/ticketing/', ticketRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);

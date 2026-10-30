@@ -15,8 +15,6 @@ const skip = testDatabaseSkipReason || (!trustedOrigin && 'APP_ORIGINS must cont
 if (skip) reportBlockedIntegrationCheck('Requestly collection end-to-end run', 'a local *_test database and APP_ORIGINS', `skipped: ${skip}`);
 
 const captures = {
-    'Sign up owner': (body, vars) => { vars.owner_user_id = body.responseData.id; },
-    'Sign up member': (body, vars) => { vars.member_user_id = body.responseData.id; },
     'Create tenant': (body, vars) => { vars.tenant_id = body.data.id; },
     'Create inventory item': (body, vars) => { vars.item_id = body.data.id; },
     'Register integration': (body, vars) => { vars.integration_id = body.data.id; vars.app_key = body.data.appKey; vars.app_secret = body.data.credential; },
@@ -67,14 +65,24 @@ describe('Requestly end-to-end collection', { skip, concurrency: false }, () => 
                     const response = await fetch(`${server.baseUrl}${path}`, { method, headers, body: body && fill(body.raw) });
                     final = { status: response.status, body: await response.json() };
                 } else {
-                    final = await api(method, path, { body: body ? JSON.parse(fill(body.raw)) : undefined, origin: headers.Origin ?? null });
+                    let parsed;
+                    try { parsed = body ? JSON.parse(fill(body.raw)) : undefined; } catch (error) {
+                        throw new Error(`${folder.name} > ${item.name}: ${error.message} :: ${results.join(' | ')}`);
+                    }
+                    final = await api(method, path, { body: parsed, origin: headers.Origin ?? null });
                 }
                 results.push(`${final.status === expected ? 'ok  ' : 'FAIL'} ${final.status} (expected ${expected}) ${folder.name} > ${item.name}`);
                 if (final.status === expected && captures[item.name]) captures[item.name](final.body, vars);
             }
             if (folder.name.startsWith('01')) {
+                // Signup now leaves accounts unverified. The identity flow (code by email) is covered by
+                // src/identity/identity.db.test.js; here the accounts are verified directly so the walkthrough can continue.
+                await pool.query(`UPDATE users SET email_verified_at = now() WHERE email = ANY($1)`, [[vars.owner_email, vars.member_email, vars.outsider_email]]);
                 await pool.query(`UPDATE users SET role_id=(SELECT id FROM roles WHERE name='dev') WHERE email = ANY($1)`,
                     [[vars.owner_email, vars.outsider_email]]);
+                const ids = Object.fromEntries((await pool.query('SELECT email, id FROM users WHERE email = ANY($1)', [[vars.owner_email, vars.member_email]])).rows.map((r) => [r.email, r.id]));
+                vars.owner_user_id = ids[vars.owner_email];
+                vars.member_user_id = ids[vars.member_email];
             }
         }
         const failures = results.filter((line) => line.startsWith('FAIL'));

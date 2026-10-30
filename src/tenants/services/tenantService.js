@@ -2,6 +2,7 @@ import { pool } from '../../db/pool.js';
 import { auditLog } from '../../audit_logs/auditLog.js';
 import { composeAuditLogs } from '../../audit_logs/auditLogService.js';
 import { compareToPattern, inRangeOfLength, isPlainObject } from '../../util/validations.js';
+import { beginIdempotent, finishIdempotent, hashRequest, readIdempotencyKey } from '../../identity/idempotency.js';
 
 // Any authenticated, active user may create an organization and becomes its owner.
 // Tenant-scoped authority afterwards comes only from tenant_members.
@@ -19,6 +20,20 @@ export const createTenant = async (req, res, next) => {
     try {
         client = await pool.connect();
         await client.query('BEGIN');
+        // A retried submission (same Idempotency-Key) replays the first response instead of creating a second company.
+        const key = readIdempotencyKey(req);
+        const idempotency = { userId: req.user.id, scope: 'create_tenant', key };
+        if (key) {
+            const state = await beginIdempotent(client, { ...idempotency, requestHash: hashRequest({ name, slug }) });
+            if (state.replay) {
+                await client.query('COMMIT');
+                return res.status(state.replay.status).json(state.replay.body);
+            }
+            if (state.conflict) {
+                await client.query('ROLLBACK');
+                return res.status(state.conflict.status).json({ error: { code: state.conflict.code, message: state.conflict.message } });
+            }
+        }
         const tenant = await client.query(
             `INSERT INTO tenants (name, slug) VALUES ($1,$2) RETURNING id, name, slug, status, created_at`, [name, slug],
         );
@@ -28,11 +43,13 @@ export const createTenant = async (req, res, next) => {
         );
         await composeAuditLogs(auditLog({ userId: req.user.id, tenantId: created.id, action: 'CREATE TENANT', tableName: 'tenants',
             recordId: created.id, newData: { name, slug, ownerUserId: req.user.id } }), client);
-        await client.query('COMMIT');
-        return res.status(201).json({ message: 'Tenant created.', data: {
+        const responseBody = { message: 'Tenant created.', data: {
             id: created.id, name: created.name, slug: created.slug, status: created.status,
             membershipRole: 'owner', createdAt: created.created_at,
-        } });
+        } };
+        if (key) await finishIdempotent(client, idempotency, 201, responseBody);
+        await client.query('COMMIT');
+        return res.status(201).json(responseBody);
     } catch (error) {
         if (client) await client.query('ROLLBACK').catch(() => {});
         if (error.code === '23505' && error.constraint === 'tenants_slug_key') {

@@ -15,3 +15,4 @@ local-db-dumps/
 tests/requestly-collection.json
 src/middleware/tests/
 documentation/
+.mail-outbox/

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, before, describe } from 'node:test';
 import { pool } from '../../db/pool.js';
+import { capturedMessages } from '../../mail/mailer.js';
 import { processIntegrationEventBatch } from '../services/integrationEventWorker.js';
 import { seedOnboardingFixtures } from '../../../tests/requestly/seed-onboarding.mjs';
 import { integrationTest as test, reportBlockedIntegrationCheck } from './integrationTestReporter.js';
@@ -37,7 +38,21 @@ describe('Requestly onboarding pipeline folder', { skip, concurrency: false }, (
     const run = async (cookieMode) => {
         collection.variable.find((v) => v.key === 'origin').value = trustedOrigin;
         const { results } = await runFolder({ collection, folderName: FOLDER, baseUrl: server.baseUrl, cookieMode,
-            beforeRequest: async (item) => { if (item.name.startsWith('Wait for the worker')) await processIntegrationEventBatch(); } });
+            beforeRequest: async (item) => {
+                if (item.name.startsWith('Wait for the worker')) await processIntegrationEventBatch();
+                // The new hire proves the address through the real verification endpoint, using the emailed code.
+                if (item.name === 'Log in as newhire') {
+                    const message = capturedMessages().filter((m) => m.template === 'verifyEmail').at(-1);
+                    const code = /Your code is (\d{6})/.exec(message.text)[1];
+                    const response = await fetch(`${server.baseUrl}/auth/verify-email`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: trustedOrigin },
+                        body: JSON.stringify({ email: message.to, code }) });
+                    assert.equal(response.status, 200);
+                }
+                // The "without TENANTS_CREATE" negative needs an account with no role; verified accounts get the standard role.
+                if (item.name === 'Create tenant without TENANTS_CREATE (negative)') {
+                    await pool.query(`UPDATE users SET role_id = NULL WHERE email LIKE 'newhire.%'`);
+                }
+            } });
         const problems = [];
         for (const result of results) {
             if (!result.tests.length) problems.push(`${result.path}: no assertions ran`);

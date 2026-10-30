@@ -34,9 +34,6 @@ export const composeAuditLogs = async (
     }
 }
 
-// Lists audit entries newest first. With a tenantId only that tenant's entries are read
-// (rows, count and pagination alike); without one the listing is global, so the route
-// must restrict it to platform operators.
 const listAuditLogs = ({ tenantScoped }) => async (req, res, next) => {
     try {
         console.log("[AUDIT LOG SERVICE]: Start Process - Retrieving audit logs.");

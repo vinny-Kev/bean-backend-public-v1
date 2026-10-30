@@ -319,9 +319,8 @@
                       "try { body = rq.response.json(); } catch (error) { body = null; }",
                       "// Saves a value for later requests only when it exists; failed assertions explain why it is missing.",
                       "const capture = (key, read) => { try { const value = read(); if (value !== undefined && value !== null) rq.variables.set(key, String(value)); } catch (error) { /* left unset */ } };",
-                      "rq.test('HTTP 201', () => { rq.expect(rq.response.code).to.equal(201); });",
-                      "rq.test('Email is normalized and returned', () => { rq.expect(body.responseData.email).to.equal(rq.variables.get('newhire_email')); });",
-                      "capture('newhire_user_id', () => body.responseData.id);",
+                      "rq.test('HTTP 202 (verification code emailed, no session)', () => { rq.expect(rq.response.code).to.equal(202); });",
+                      "rq.test('Generic acceptance, no account details echoed', () => { rq.expect(body.status).to.equal('verification_sent'); rq.expect(JSON.stringify(body).includes(rq.variables.get('newhire_email'))).to.equal(false); });",
                       "rq.test('No password hash, credential hash, or session ID in the body', () => {",
                       "  const text = rq.response.text();",
                       "  rq.expect(/\\$2[aby]\\$|password_hash|credential_hash|bean\\.sid/.test(text)).to.equal(false);",
@@ -350,7 +349,7 @@
                       "language": "json"
                     }
                   },
-                  "raw": "{\n  \"username\": \"{{newhire_username}}\",\n  \"email\": \"{{newhire_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+                  "raw": "{\n  \"fullName\": \"New Hire\",\n  \"username\": \"{{newhire_username}}\",\n  \"email\": \"{{newhire_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/auth/signup",
@@ -443,6 +442,7 @@
                       "const sid = /bean\\.sid=[^;,\\s]+/.exec(String(setCookie));",
                       "rq.variables.set('session_cookie', sid ? sid[0] : '');",
                       "rq.test('Logged in as the newhire account', () => { rq.expect(body.user.email).to.equal(rq.variables.get('newhire_email')); });",
+                      "capture('newhire_user_id', () => body.user.id);",
                       "rq.test('No password hash, credential hash, or session ID in the body', () => {",
                       "  const text = rq.response.text();",
                       "  rq.expect(/\\$2[aby]\\$|password_hash|credential_hash|bean\\.sid/.test(text)).to.equal(false);",
@@ -511,7 +511,7 @@
                       "const capture = (key, read) => { try { const value = read(); if (value !== undefined && value !== null) rq.variables.set(key, String(value)); } catch (error) { /* left unset */ } };",
                       "rq.test('HTTP 200', () => { rq.expect(rq.response.code).to.equal(200); });",
                       "rq.test('Session belongs to the new hire', () => { rq.expect(String(body.user.id)).to.equal(rq.variables.get('newhire_user_id')); });",
-                      "rq.test('No account permissions', () => { rq.expect(body.user.permissions).to.eql([]); });",
+                      "rq.test('Only the default TENANTS_CREATE permission (standard role granted on verification)', () => { rq.expect(body.user.permissions).to.eql(['TENANTS_CREATE']); });",
                       "rq.test('No password hash, credential hash, or session ID in the body', () => {",
                       "  const text = rq.response.text();",
                       "  rq.expect(/\\$2[aby]\\$|password_hash|credential_hash|bean\\.sid/.test(text)).to.equal(false);",
@@ -4678,7 +4678,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"username\": \"{{owner_username}}\",\n  \"email\": \"{{owner_email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "raw": "{\n  \"fullName\": \"E2E Person\",\n  \"username\": \"{{owner_username}}\",\n  \"email\": \"{{owner_email}}\",\n  \"password\": \"{{password}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -4695,7 +4695,7 @@
                     "signup"
                   ]
                 },
-                "description": "Expected: 201; note responseData.id as owner_user_id."
+                "description": "Expected: 202 (a verification code is emailed; the account stays unverified until the code is entered)."
               },
               "response": []
             },
@@ -4716,7 +4716,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"username\": \"{{member_username}}\",\n  \"email\": \"{{member_email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "raw": "{\n  \"fullName\": \"E2E Person\",\n  \"username\": \"{{member_username}}\",\n  \"email\": \"{{member_email}}\",\n  \"password\": \"{{password}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -4733,7 +4733,7 @@
                     "signup"
                   ]
                 },
-                "description": "Expected: 201; note responseData.id as member_user_id."
+                "description": "Expected: 202 (verification pending)."
               },
               "response": []
             },
@@ -4754,7 +4754,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"username\": \"{{outsider_username}}\",\n  \"email\": \"{{outsider_email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "raw": "{\n  \"fullName\": \"E2E Person\",\n  \"username\": \"{{outsider_username}}\",\n  \"email\": \"{{outsider_email}}\",\n  \"password\": \"{{password}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -4771,7 +4771,7 @@
                     "signup"
                   ]
                 },
-                "description": "Expected: 201."
+                "description": "Expected: 202 (verification pending)."
               },
               "response": []
             },
@@ -4792,7 +4792,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"username\": \"another\",\n  \"email\": \"{{owner_email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "raw": "{\n  \"fullName\": \"E2E Person\",\n  \"username\": \"another\",\n  \"email\": \"{{owner_email}}\",\n  \"password\": \"{{password}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -4809,7 +4809,7 @@
                     "signup"
                   ]
                 },
-                "description": "Expected: 409. Signup is limited to 5 requests per hour per IP."
+                "description": "Expected: 202 (the same answer whether or not the address is registered). Signup is limited to 5 requests per hour per IP."
               },
               "response": []
             },
@@ -4830,7 +4830,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"username\": \"x\",\n  \"email\": \"not-an-email\",\n  \"password\": \"weak\"\n}",
+                  "raw": "{\n  \"fullName\": \"E2E Person\",\n  \"username\": \"x\",\n  \"email\": \"not-an-email\",\n  \"password\": \"weak\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -4863,7 +4863,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"username\": \"noorigin\",\n  \"email\": \"noorigin@example.test\",\n  \"password\": \"{{password}}\"\n}",
+                  "raw": "{\n  \"fullName\": \"E2E Person\",\n  \"username\": \"noorigin\",\n  \"email\": \"noorigin@example.test\",\n  \"password\": \"{{password}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
